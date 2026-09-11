@@ -22,6 +22,9 @@ struct WarrenApp: App {
         }
         .defaultSize(width: 1000, height: 720)
         .commands {
+            CommandGroup(replacing: .help) {
+                OpenHelpButton()
+            }
             CommandGroup(after: .newItem) {
                 Button("New Tab") { store.newTab() }
                     .keyboardShortcut("t", modifiers: .command)
@@ -81,10 +84,26 @@ struct WarrenApp: App {
                     .environmentObject(store)
             }
         }
+
+        Window("Warren Help", id: "help") {
+            HelpView()
+        }
+        .defaultSize(width: 660, height: 580)
     }
 
     private var canExportCurrent: Bool {
         guard let tab = store.selectedTab else { return false }
         return PageExporter.canExport(tab.content)
+    }
+}
+
+/// Menu items can't read @Environment(\.openWindow) directly from the
+/// App struct, so the Help command lives in its own little view.
+private struct OpenHelpButton: View {
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Button("Warren Help") { openWindow(id: "help") }
+            .keyboardShortcut("?", modifiers: .command)
     }
 }

@@ -6,9 +6,9 @@
 2. ~~Add a feature to clear the history from the past hour, 4 hours, day, or all.~~ Clear History submenu and manager Clear… menu (clear-all asks for confirmation).
 3. ~~All the user to remove one or more items from the history individually.~~ Multi-select removal and per-row context menu in the manager.
 
-## Application Help
+## Application Help ✅ DONE 2026-09-11
 
-1. Add an application help page(s). The help can explain what gopher is and how to use the app.
+1. ~~Add an application help page(s). The help can explain what gopher is and how to use the app.~~ Help menu → Warren Help (⌘?) opens a dedicated help window: Gopher primer, address formats, item-type reference, searching, bookmarks, history, saving, and keyboard shortcuts.
 
 ## Command Line Utility
 

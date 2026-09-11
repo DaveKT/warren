@@ -31,6 +31,8 @@ with gopher URLs per [RFC 4266](https://www.rfc-editor.org/rfc/rfc4266).
   clear-by-age (past hour / 4 hours / day / all)
 - **Save as TXT / Markdown** — ⌘S / ⇧⌘S; menus become Markdown link lists,
   text pages are fenced to preserve formatting
+- **Help** — ⌘? opens a help window with a Gopher primer, item-type
+  reference, and keyboard shortcuts
 - UTF-8 with Latin-1 fallback for legacy servers; monospaced rendering so
   Gopherspace ASCII art stays aligned
 

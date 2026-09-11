@@ -1,0 +1,151 @@
+import SwiftUI
+
+struct ContentView: View {
+    @EnvironmentObject private var store: BrowserStore
+    @EnvironmentObject private var bookmarks: BookmarkStore
+    @FocusState private var addressFieldFocused: Bool
+
+    var body: some View {
+        VStack(spacing: 0) {
+            TabBarView()
+            Divider()
+            if let tab = store.selectedTab {
+                TabContentView(tab: tab)
+            } else {
+                HomeView()
+            }
+            if !store.statusMessage.isEmpty {
+                Divider()
+                Text(store.statusMessage)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+            }
+        }
+        .toolbar { toolbarContent }
+        .navigationTitle(store.selectedTab?.title ?? "Warren")
+        .sheet(item: $store.searchPrompt) { prompt in
+            SearchPromptView(prompt: prompt)
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        ToolbarItemGroup(placement: .navigation) {
+            Button(action: { store.goBack() }) {
+                Image(systemName: "chevron.left")
+            }
+            .help("Back")
+            .disabled(!(store.selectedTab?.canGoBack ?? false))
+
+            Button(action: { store.goForward() }) {
+                Image(systemName: "chevron.right")
+            }
+            .help("Forward")
+            .disabled(!(store.selectedTab?.canGoForward ?? false))
+
+            Button(action: { store.reload() }) {
+                if store.selectedTab?.isLoading == true {
+                    Image(systemName: "xmark")
+                } else {
+                    Image(systemName: "arrow.clockwise")
+                }
+            }
+            .help("Reload")
+            .disabled(store.selectedTab?.currentAddress == nil)
+        }
+
+        ToolbarItem(placement: .principal) {
+            TextField("gopher://", text: $store.addressBarText)
+                .textFieldStyle(.roundedBorder)
+                .font(.system(.body, design: .monospaced))
+                .frame(minWidth: 280, idealWidth: 460)
+                .focused($addressFieldFocused)
+                .onSubmit {
+                    store.submitAddressBar()
+                    addressFieldFocused = false
+                }
+        }
+
+        ToolbarItemGroup(placement: .primaryAction) {
+            bookmarkToggleButton
+            BookmarksMenu()
+            saveMenu
+        }
+    }
+
+    private var bookmarkToggleButton: some View {
+        let address = store.selectedTab?.currentAddress
+        let isBookmarked = address.map { bookmarks.contains($0) } ?? false
+        return Button(action: {
+            guard let tab = store.selectedTab, let address = tab.currentAddress else { return }
+            if isBookmarked {
+                bookmarks.remove(address: address)
+            } else {
+                bookmarks.add(title: tab.title, address: address)
+            }
+        }) {
+            Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
+        }
+        .help(isBookmarked ? "Remove Bookmark" : "Add Bookmark")
+        .disabled(address == nil)
+    }
+
+    private var saveMenu: some View {
+        Menu {
+            Button("Save as Text…") {
+                if let tab = store.selectedTab { PageExporter.export(tab: tab, format: .plainText) }
+            }
+            Button("Save as Markdown…") {
+                if let tab = store.selectedTab { PageExporter.export(tab: tab, format: .markdown) }
+            }
+        } label: {
+            Image(systemName: "square.and.arrow.down")
+        }
+        .help("Save Page As…")
+        .disabled(!(store.selectedTab.map { PageExporter.canExport($0.content) } ?? false))
+    }
+}
+
+struct TabContentView: View {
+    @ObservedObject var tab: BrowserTab
+
+    var body: some View {
+        ZStack {
+            switch tab.content {
+            case .home:
+                HomeView()
+            case .menu(let items):
+                MenuPageView(items: items)
+            case .text(let text):
+                TextPageView(text: text)
+            case .image(let data):
+                ImagePageView(data: data)
+            case .error(let message):
+                ErrorPageView(message: message)
+            }
+
+            if tab.isLoading {
+                ProgressView()
+                    .controlSize(.large)
+                    .padding(24)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+struct ErrorPageView: View {
+    let message: String
+
+    var body: some View {
+        ContentUnavailableView {
+            Label("Burrow Blocked", systemImage: "exclamationmark.octagon")
+        } description: {
+            Text(message)
+        }
+    }
+}

@@ -1,0 +1,26 @@
+# Feature Requests
+
+## History Epic
+
+1. Add a feature that can save the browsing history to be easily be called by the user at a later date.
+2. Add a feature to clear the history from the past hour, 4 hours, day, or all.
+3. All the user to remove one or more items from the history individually.
+
+## Application Help
+
+1. Add an application help page(s). The help can explain what gopher is and how to use the app.
+
+## Command Line Utility
+
+1. Allow the user to fetch the content from a specific gopher url.
+2. Allow the user to list the current bookmarks.
+3. Allow the user to list the history items.
+4. Allow the user to search bookmarks and history items.
+5. Allow the user to remove a specific history item.
+6. Allow the user to remove a specific bookmark.
+7. Allow the user to remove all history items from the past hour, 4 hours, or all.
+8. The CLI should be pipeable to and from other command line utlities (e.g. grep)
+
+## Support for Bookmark Folders
+
+1. All the user to organize and retrieve bookmarks to and from folders in the app.

@@ -29,6 +29,9 @@ struct ContentView: View {
         .sheet(item: $store.searchPrompt) { prompt in
             SearchPromptView(prompt: prompt)
         }
+        .sheet(isPresented: $store.showHistoryManager) {
+            HistoryView()
+        }
     }
 
     @ToolbarContentBuilder

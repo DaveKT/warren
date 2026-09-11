@@ -17,8 +17,13 @@ final class BrowserStore: ObservableObject {
     @Published var addressBarText = ""
     @Published var searchPrompt: SearchPrompt?
     @Published var statusMessage = ""
+    @Published var showHistoryManager = false
 
-    init() {
+    /// Global visit history; injected so both stores stay app-owned.
+    let historyStore: HistoryStore?
+
+    init(history: HistoryStore? = nil) {
+        historyStore = history
         newTab()
     }
 
@@ -119,6 +124,7 @@ final class BrowserStore: ObservableObject {
         tab.history.append(HistoryEntry(address: address, title: title ?? address.displayString))
         tab.historyIndex = tab.history.count - 1
 
+        historyStore?.record(address: address, title: title ?? address.displayString)
         load(tab: tab, address: address, cacheInto: tab.historyIndex)
     }
 
@@ -209,6 +215,9 @@ final class BrowserStore: ObservableObject {
             if tab.history.indices.contains(historyIndex) {
                 tab.history[historyIndex].content = content
                 if let pageTitle { tab.history[historyIndex].title = pageTitle }
+            }
+            if let pageTitle {
+                historyStore?.updateTitle(for: address, title: pageTitle)
             }
             statusMessage = ""
         }

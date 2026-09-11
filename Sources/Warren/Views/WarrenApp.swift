@@ -2,14 +2,22 @@ import SwiftUI
 
 @main
 struct WarrenApp: App {
-    @StateObject private var store = BrowserStore()
+    @StateObject private var store: BrowserStore
     @StateObject private var bookmarks = BookmarkStore()
+    @StateObject private var history: HistoryStore
+
+    init() {
+        let history = HistoryStore()
+        _history = StateObject(wrappedValue: history)
+        _store = StateObject(wrappedValue: BrowserStore(history: history))
+    }
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(store)
                 .environmentObject(bookmarks)
+                .environmentObject(history)
                 .frame(minWidth: 700, minHeight: 450)
         }
         .defaultSize(width: 1000, height: 720)
@@ -46,6 +54,23 @@ struct WarrenApp: App {
                 Divider()
                 Button("Home") { store.goHome() }
                     .keyboardShortcut("h", modifiers: [.command, .shift])
+            }
+            CommandMenu("History") {
+                Button("Show All History…") { store.showHistoryManager = true }
+                    .keyboardShortcut("y", modifiers: .command)
+                Divider()
+                ForEach(history.items.prefix(15)) { item in
+                    Button(item.title) {
+                        if let address = item.address { store.open(address, title: item.title) }
+                    }
+                }
+                if !history.items.isEmpty { Divider() }
+                Menu("Clear History") {
+                    ForEach(HistoryStore.ClearRange.allCases, id: \.self) { range in
+                        Button(range.label) { history.confirmAndClear(range) }
+                    }
+                }
+                .disabled(history.items.isEmpty)
             }
             CommandMenu("Bookmarks") {
                 Button("Add Bookmark…") { addCurrentBookmark() }

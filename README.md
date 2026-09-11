@@ -21,6 +21,10 @@ with gopher URLs per [RFC 4266](https://www.rfc-editor.org/rfc/rfc4266).
 - **Back / Forward / Reload** — ⌘[ , ⌘] , ⌘R, with instant cached history
 - **Bookmarks** — ⌘D to add, toolbar menu, manager sheet, persisted as JSON
   in `~/Library/Application Support/Warren/bookmarks.json`
+- **History** — every visit recorded to
+  `~/Library/Application Support/Warren/history.json`; History menu with
+  recent pages, ⌘Y manager with search and per-item removal, and
+  clear-by-age (past hour / 4 hours / day / all)
 - **Save as TXT / Markdown** — ⌘S / ⇧⌘S; menus become Markdown link lists,
   text pages are fenced to preserve formatting
 - UTF-8 with Latin-1 fallback for legacy servers; monospaced rendering so

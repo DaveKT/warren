@@ -1,10 +1,10 @@
 # Feature Requests
 
-## History Epic
+## History Epic ✅ DONE 2026-09-11
 
-1. Add a feature that can save the browsing history to be easily be called by the user at a later date.
-2. Add a feature to clear the history from the past hour, 4 hours, day, or all.
-3. All the user to remove one or more items from the history individually.
+1. ~~Add a feature that can save the browsing history to be easily be called by the user at a later date.~~ History menu + ⌘Y manager with search; persisted across launches.
+2. ~~Add a feature to clear the history from the past hour, 4 hours, day, or all.~~ Clear History submenu and manager Clear… menu (clear-all asks for confirmation).
+3. ~~All the user to remove one or more items from the history individually.~~ Multi-select removal and per-row context menu in the manager.
 
 ## Application Help
 

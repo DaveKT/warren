@@ -118,9 +118,11 @@ final class BrowserStore: ObservableObject {
             tab = selectedTab ?? newTab()
         }
 
-        // Push onto history, discarding any forward entries.
+        // Push onto history, discarding any forward entries (and their
+        // remembered scroll offsets, since those indexes get reused).
         if tab.historyIndex < tab.history.count - 1 {
             tab.history.removeSubrange((tab.historyIndex + 1)...)
+            tab.scrollOffsets = tab.scrollOffsets.filter { $0.key < tab.history.count }
         }
         tab.history.append(HistoryEntry(address: address, title: title ?? address.displayString))
         tab.historyIndex = tab.history.count - 1
@@ -167,6 +169,7 @@ final class BrowserStore: ObservableObject {
         let entry = tab.history[tab.historyIndex]
         addressBarText = entry.address.displayString
         tab.title = entry.title
+        tab.pendingScrollRestore = tab.scrollOffsets[tab.historyIndex]
         if let cached = entry.content {
             tab.loadGeneration += 1 // invalidate any in-flight load
             tab.isLoading = false

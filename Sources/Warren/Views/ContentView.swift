@@ -125,11 +125,11 @@ struct TabContentView: View {
                 case .home:
                     HomeView()
                 case .menu(let items):
-                    MenuPageView(items: items)
+                    MenuPageView(items: items, memory: scrollMemory)
                 case .text(let text):
-                    TextPageView(text: text)
+                    TextPageView(text: text, memory: scrollMemory)
                 case .image(let data):
-                    ImagePageView(data: data)
+                    ImagePageView(data: data, memory: scrollMemory)
                 case .error(let message):
                     ErrorPageView(message: message)
                 }
@@ -147,6 +147,12 @@ struct TabContentView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// Records this page's scroll offset and restores it on Back/Forward.
+    private var scrollMemory: ScrollMemory? {
+        guard tab.historyIndex >= 0 else { return nil }
+        return ScrollMemory(tab: tab, index: tab.historyIndex)
     }
 }
 

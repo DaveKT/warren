@@ -5,10 +5,14 @@ import SwiftUI
 struct MenuPageView: View {
     @EnvironmentObject private var store: BrowserStore
     let items: [GopherItem]
+    var memory: ScrollMemory? = nil
 
     var body: some View {
         ScrollView([.vertical]) {
-            LazyVStack(alignment: .leading, spacing: 0) {
+            // Plain VStack (not lazy) so the full content height exists
+            // immediately and Back/Forward scroll restoration can't be
+            // clamped by lazily estimated layout.
+            VStack(alignment: .leading, spacing: 0) {
                 ForEach(items) { item in
                     MenuRow(item: item)
                 }
@@ -16,6 +20,7 @@ struct MenuPageView: View {
             .padding(.vertical, 12)
             .padding(.horizontal, 16)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .background(memory)
         }
         .background(Color(nsColor: .textBackgroundColor))
     }
@@ -93,6 +98,7 @@ private struct MenuRow: View {
 /// Renders a type 0 text file.
 struct TextPageView: View {
     let text: String
+    var memory: ScrollMemory? = nil
 
     var body: some View {
         ScrollView([.vertical, .horizontal]) {
@@ -101,6 +107,7 @@ struct TextPageView: View {
                 .textSelection(.enabled)
                 .padding(16)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .background(memory)
         }
         .background(Color(nsColor: .textBackgroundColor))
     }
@@ -109,12 +116,14 @@ struct TextPageView: View {
 /// Renders inline images (types g, I, p).
 struct ImagePageView: View {
     let data: Data
+    var memory: ScrollMemory? = nil
 
     var body: some View {
         if let image = NSImage(data: data) {
             ScrollView([.vertical, .horizontal]) {
                 Image(nsImage: image)
                     .padding(16)
+                    .background(memory)
             }
             .background(Color(nsColor: .textBackgroundColor))
         } else {

@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 
 /// What a tab is currently showing.
@@ -27,6 +28,15 @@ final class BrowserTab: ObservableObject, Identifiable {
 
     /// Serial number of the most recent load; stale loads are dropped.
     var loadGeneration = 0
+
+    /// Last known scroll offset per history index, kept outside @Published
+    /// state so scrolling doesn't trigger view updates. Used to restore
+    /// position on Back/Forward; transient, in-memory only.
+    var scrollOffsets: [Int: CGPoint] = [:]
+
+    /// Offset the next page view should jump to once laid out (set by
+    /// Back/Forward navigation, consumed by ScrollMemory).
+    var pendingScrollRestore: CGPoint?
 
     var currentAddress: GopherAddress? {
         guard history.indices.contains(historyIndex) else { return nil }

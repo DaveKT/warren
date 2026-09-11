@@ -120,18 +120,24 @@ struct TabContentView: View {
 
     var body: some View {
         ZStack {
-            switch tab.content {
-            case .home:
-                HomeView()
-            case .menu(let items):
-                MenuPageView(items: items)
-            case .text(let text):
-                TextPageView(text: text)
-            case .image(let data):
-                ImagePageView(data: data)
-            case .error(let message):
-                ErrorPageView(message: message)
+            Group {
+                switch tab.content {
+                case .home:
+                    HomeView()
+                case .menu(let items):
+                    MenuPageView(items: items)
+                case .text(let text):
+                    TextPageView(text: text)
+                case .image(let data):
+                    ImagePageView(data: data)
+                case .error(let message):
+                    ErrorPageView(message: message)
+                }
             }
+            // Fresh identity per navigation so each page gets a new
+            // scroll view starting at the top, instead of inheriting
+            // the previous page's scroll offset.
+            .id("\(tab.historyIndex)|\(tab.currentAddress?.urlString ?? "home")")
 
             if tab.isLoading {
                 ProgressView()

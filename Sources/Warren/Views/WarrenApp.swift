@@ -73,15 +73,12 @@ struct WarrenApp: App {
                 .disabled(history.items.isEmpty)
             }
             CommandMenu("Bookmarks") {
-                Button("Add Bookmark…") { addCurrentBookmark() }
+                Button("Add Bookmark…") { store.showAddBookmark = true }
                     .keyboardShortcut("d", modifiers: .command)
                     .disabled(store.selectedTab?.currentAddress == nil)
                 Divider()
-                ForEach(bookmarks.bookmarks) { bookmark in
-                    Button(bookmark.title) {
-                        if let address = bookmark.address { store.open(address, title: bookmark.title) }
-                    }
-                }
+                BookmarkMenuItems(nodes: bookmarks.root)
+                    .environmentObject(store)
             }
         }
     }
@@ -89,10 +86,5 @@ struct WarrenApp: App {
     private var canExportCurrent: Bool {
         guard let tab = store.selectedTab else { return false }
         return PageExporter.canExport(tab.content)
-    }
-
-    private func addCurrentBookmark() {
-        guard let tab = store.selectedTab, let address = tab.currentAddress else { return }
-        bookmarks.add(title: tab.title, address: address)
     }
 }

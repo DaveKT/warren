@@ -19,8 +19,12 @@ with gopher URLs per [RFC 4266](https://www.rfc-editor.org/rfc/rfc4266).
     in your web browser), `s` (sound), `p` (PNG), `d` (document)
 - **Tabs** — ⌘T new tab, ⌘W close tab, per-tab history
 - **Back / Forward / Reload** — ⌘[ , ⌘] , ⌘R, with instant cached history
-- **Bookmarks** — ⌘D to add, toolbar menu, manager sheet, persisted as JSON
-  in `~/Library/Application Support/Warren/bookmarks.json`
+- **Bookmarks** — ⌘D opens an add sheet with title and folder choice;
+  nestable folders appear as submenus in the toolbar and menu bar and as
+  an outline in the manager (new folder, rename, move, multi-remove).
+  Persisted as versioned JSON in
+  `~/Library/Application Support/Warren/bookmarks.json` (v1 flat lists
+  migrate automatically)
 - **History** — every visit recorded to
   `~/Library/Application Support/Warren/history.json`; History menu with
   recent pages, ⌘Y manager with search and per-item removal, and

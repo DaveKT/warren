@@ -21,6 +21,6 @@
 7. Allow the user to remove all history items from the past hour, 4 hours, or all.
 8. The CLI should be pipeable to and from other command line utlities (e.g. grep)
 
-## Support for Bookmark Folders
+## Support for Bookmark Folders ✅ DONE 2026-09-11
 
-1. All the user to organize and retrieve bookmarks to and from folders in the app.
+1. ~~All the user to organize and retrieve bookmarks to and from folders in the app.~~ Nestable folders: add sheet picks a destination folder, manager offers new-folder/rename/move-to/remove on an outline view, and folders show as submenus in the Bookmarks menus and on the home page. bookmarks.json is now versioned (v2) with automatic migration.

@@ -18,6 +18,7 @@ final class BrowserStore: ObservableObject {
     @Published var searchPrompt: SearchPrompt?
     @Published var statusMessage = ""
     @Published var showHistoryManager = false
+    @Published var showAddBookmark = false
 
     /// Global visit history; injected so both stores stay app-owned.
     let historyStore: HistoryStore?

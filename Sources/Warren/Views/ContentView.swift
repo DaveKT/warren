@@ -32,6 +32,9 @@ struct ContentView: View {
         .sheet(isPresented: $store.showHistoryManager) {
             HistoryView()
         }
+        .sheet(isPresented: $store.showAddBookmark) {
+            AddBookmarkSheet()
+        }
     }
 
     @ToolbarContentBuilder
@@ -83,11 +86,11 @@ struct ContentView: View {
         let address = store.selectedTab?.currentAddress
         let isBookmarked = address.map { bookmarks.contains($0) } ?? false
         return Button(action: {
-            guard let tab = store.selectedTab, let address = tab.currentAddress else { return }
+            guard let address = store.selectedTab?.currentAddress else { return }
             if isBookmarked {
                 bookmarks.remove(address: address)
             } else {
-                bookmarks.add(title: tab.title, address: address)
+                store.showAddBookmark = true
             }
         }) {
             Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")

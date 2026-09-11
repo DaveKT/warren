@@ -22,28 +22,7 @@ struct HomeView: View {
                     Text("Bookmarks")
                         .font(.headline)
                         .foregroundStyle(.secondary)
-                    ForEach(bookmarks.bookmarks) { bookmark in
-                        Button(action: {
-                            if let address = bookmark.address {
-                                store.open(address, title: bookmark.title)
-                            }
-                        }) {
-                            HStack {
-                                Image(systemName: "bookmark")
-                                    .foregroundStyle(.secondary)
-                                Text(bookmark.title)
-                                Spacer()
-                                Text(bookmark.urlString)
-                                    .font(.system(.caption, design: .monospaced))
-                                    .foregroundStyle(.tertiary)
-                            }
-                            .padding(.vertical, 6)
-                            .padding(.horizontal, 10)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 6))
-                    }
+                    HomeBookmarkList(nodes: bookmarks.root, depth: 0)
                 }
                 .frame(maxWidth: 520)
 
@@ -60,86 +39,52 @@ struct HomeView: View {
     }
 }
 
-/// Toolbar menu for browsing and managing bookmarks.
-struct BookmarksMenu: View {
+/// Recursive bookmark listing for the home page: folders are headers
+/// with their contents indented beneath them.
+private struct HomeBookmarkList: View {
     @EnvironmentObject private var store: BrowserStore
-    @EnvironmentObject private var bookmarks: BookmarkStore
-    @State private var showManager = false
+    let nodes: [BookmarkNode]
+    let depth: Int
 
     var body: some View {
-        Menu {
-            ForEach(bookmarks.bookmarks) { bookmark in
-                Button(bookmark.title) {
-                    if let address = bookmark.address {
-                        store.open(address, title: bookmark.title)
-                    }
+        ForEach(nodes) { node in
+            if node.isFolder {
+                HStack(spacing: 6) {
+                    Image(systemName: "folder")
+                        .foregroundStyle(.secondary)
+                    Text(node.title)
+                        .fontWeight(.medium)
+                    Spacer()
                 }
-            }
-            if !bookmarks.bookmarks.isEmpty { Divider() }
-            Button("Manage Bookmarks…") { showManager = true }
-        } label: {
-            Image(systemName: "book")
-        }
-        .help("Bookmarks")
-        .sheet(isPresented: $showManager) {
-            BookmarkManagerView()
-        }
-    }
-}
-
-struct BookmarkManagerView: View {
-    @EnvironmentObject private var bookmarks: BookmarkStore
-    @EnvironmentObject private var store: BrowserStore
-    @Environment(\.dismiss) private var dismiss
-    @State private var selection: Bookmark.ID?
-
-    var body: some View {
-        VStack(spacing: 0) {
-            List(selection: $selection) {
-                ForEach(bookmarks.bookmarks) { bookmark in
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(bookmark.title)
-                        Text(bookmark.urlString)
-                            .font(.system(.caption, design: .monospaced))
+                .padding(.vertical, 4)
+                .padding(.leading, CGFloat(depth) * 20 + 10)
+                HomeBookmarkList(nodes: node.children ?? [], depth: depth + 1)
+            } else {
+                Button(action: {
+                    if let address = node.address {
+                        store.open(address, title: node.title)
+                    }
+                }) {
+                    HStack {
+                        Image(systemName: "bookmark")
                             .foregroundStyle(.secondary)
+                        Text(node.title)
+                        Spacer()
+                        if let url = node.urlString {
+                            Text(url)
+                                .font(.system(.caption, design: .monospaced))
+                                .foregroundStyle(.tertiary)
+                                .lineLimit(1)
+                        }
                     }
-                    .tag(bookmark.id)
+                    .padding(.vertical, 6)
+                    .padding(.horizontal, 10)
+                    .contentShape(Rectangle())
                 }
-                .onMove { source, destination in
-                    bookmarks.move(fromOffsets: source, toOffset: destination)
-                }
+                .buttonStyle(.plain)
+                .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 6))
+                .padding(.leading, CGFloat(depth) * 20)
             }
-            .frame(minHeight: 260)
-            Divider()
-            HStack {
-                Button(action: removeSelected) {
-                    Image(systemName: "minus")
-                }
-                .disabled(selection == nil)
-                .help("Remove selected bookmark")
-                Spacer()
-                Button("Open") { openSelected() }
-                    .disabled(selection == nil)
-                Button("Done") { dismiss() }
-                    .keyboardShortcut(.defaultAction)
-            }
-            .padding(10)
-        }
-        .frame(width: 460, height: 340)
-    }
-
-    private func removeSelected() {
-        if let selected = bookmarks.bookmarks.first(where: { $0.id == selection }) {
-            bookmarks.remove(selected)
-            selection = nil
-        }
-    }
-
-    private func openSelected() {
-        if let selected = bookmarks.bookmarks.first(where: { $0.id == selection }),
-           let address = selected.address {
-            store.open(address, title: selected.title)
-            dismiss()
         }
     }
 }

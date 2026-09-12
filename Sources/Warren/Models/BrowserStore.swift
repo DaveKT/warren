@@ -61,6 +61,27 @@ final class BrowserStore: ObservableObject {
         addressBarText = tab.currentAddress?.displayString ?? ""
     }
 
+    func selectNextTab() {
+        guard tabs.count > 1,
+              let index = tabs.firstIndex(where: { $0.id == selectedTabID }) else { return }
+        selectTab(tabs[(index + 1) % tabs.count])
+    }
+
+    func selectPreviousTab() {
+        guard tabs.count > 1,
+              let index = tabs.firstIndex(where: { $0.id == selectedTabID }) else { return }
+        selectTab(tabs[(index + tabs.count - 1) % tabs.count])
+    }
+
+    /// Drag-and-drop reordering: moves the dragged tab into the slot of
+    /// the tab it is currently hovering over.
+    func moveTab(id draggedID: UUID, over targetID: UUID) {
+        guard draggedID != targetID,
+              let from = tabs.firstIndex(where: { $0.id == draggedID }),
+              let to = tabs.firstIndex(where: { $0.id == targetID }) else { return }
+        tabs.move(fromOffsets: IndexSet(integer: from), toOffset: to > from ? to + 1 : to)
+    }
+
     // MARK: - Navigation
 
     /// Entry point for the address bar.

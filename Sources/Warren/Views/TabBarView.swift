@@ -1,7 +1,9 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct TabBarView: View {
     @EnvironmentObject private var store: BrowserStore
+    @State private var draggedTabID: UUID?
 
     var body: some View {
         HStack(spacing: 1) {
@@ -9,6 +11,17 @@ struct TabBarView: View {
                 HStack(spacing: 1) {
                     ForEach(store.tabs) { tab in
                         TabButton(tab: tab, isSelected: tab.id == store.selectedTabID)
+                            .onDrag {
+                                draggedTabID = tab.id
+                                return NSItemProvider(object: tab.id.uuidString as NSString)
+                            } preview: {
+                                TabDragPreview(tab: tab)
+                            }
+                            .onDrop(
+                                of: [.text],
+                                delegate: TabReorderDelegate(
+                                    tabID: tab.id, draggedTabID: $draggedTabID, store: store)
+                            )
                     }
                 }
             }
@@ -23,6 +36,55 @@ struct TabBarView: View {
         }
         .frame(height: 30)
         .background(.bar)
+    }
+}
+
+/// The image carried under the cursor while dragging. The live TabButton
+/// has a transparent background, so a snapshot of it would let the tabs
+/// underneath show through; this stands in with an opaque one.
+private struct TabDragPreview: View {
+    @ObservedObject var tab: BrowserTab
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "rectangle.on.rectangle")
+                .font(.system(size: 10))
+                .foregroundStyle(.secondary)
+            Text(tab.title)
+                .font(.callout)
+                .lineLimit(1)
+                .truncationMode(.tail)
+        }
+        .padding(.horizontal, 10)
+        .frame(width: 170, height: 30)
+        .background(Color(nsColor: .windowBackgroundColor))
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+    }
+}
+
+/// Reorders tabs live as the drag passes over each tab slot; the drop
+/// itself just ends the drag, since the move already happened.
+private struct TabReorderDelegate: DropDelegate {
+    let tabID: UUID
+    @Binding var draggedTabID: UUID?
+    let store: BrowserStore
+
+    func dropEntered(info: DropInfo) {
+        guard let draggedTabID, draggedTabID != tabID else { return }
+        MainActor.assumeIsolated {
+            withAnimation {
+                store.moveTab(id: draggedTabID, over: tabID)
+            }
+        }
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: .move)
+    }
+
+    func performDrop(info: DropInfo) -> Bool {
+        draggedTabID = nil
+        return true
     }
 }
 

@@ -28,7 +28,8 @@ choose Open to pass Gatekeeper.
   - `g`/`I` images rendered inline
   - Plus the de facto extensions `i` (info), `h` (HTML/`URL:` links opened
     in your web browser), `s` (sound), `p` (PNG), `d` (document)
-- **Tabs** — ⌘T new tab, ⌘W close tab, per-tab history
+- **Tabs** — ⌘T new tab, ⌘W close tab, per-tab history; drag tabs to
+  reorder them, ⌃⇥ / ⌃⇧⇥ cycle through tabs
 - **Back / Forward / Reload** — ⌘[ , ⌘] , ⌘R, with instant cached history
 - **Bookmarks** — ⌘D opens an add sheet with title and folder choice;
   nestable folders appear as submenus in the toolbar and menu bar and as

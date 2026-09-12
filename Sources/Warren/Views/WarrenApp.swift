@@ -66,6 +66,13 @@ struct WarrenApp: App {
                 Divider()
                 Button("Home") { store.goHome() }
                     .keyboardShortcut("h", modifiers: [.command, .shift])
+                Divider()
+                Button("Show Next Tab") { store.selectNextTab() }
+                    .keyboardShortcut(.tab, modifiers: .control)
+                    .disabled(store.tabs.count < 2)
+                Button("Show Previous Tab") { store.selectPreviousTab() }
+                    .keyboardShortcut(.tab, modifiers: [.control, .shift])
+                    .disabled(store.tabs.count < 2)
             }
             CommandMenu("History") {
                 Button("Show All History…") { store.showHistoryManager = true }

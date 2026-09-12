@@ -37,6 +37,6 @@
 
 Right now, the only protocol supported is Gopher. Gemini is another similar protocol that users of gopher will sometimes run into and use. Warren should support Gemini.
 
-## Rearrange Tabs
+## Rearrange Tabs ✅ DONE 2026-09-12
 
-In the current version, the tabs can not be rearranged. The user would benefit from being able to reorder the tabs by drag and drop. Additionally, the user would benefit from a keyboard shortcut that would allow them to cycle through the tabs.
+~~In the current version, the tabs can not be rearranged. The user would benefit from being able to reorder the tabs by drag and drop. Additionally, the user would benefit from a keyboard shortcut that would allow them to cycle through the tabs.~~ Tabs reorder live by drag and drop in the tab bar; Go menu → Show Next Tab (⌃⇥) / Show Previous Tab (⌃⇧⇥) cycle through tabs, wrapping at the ends.

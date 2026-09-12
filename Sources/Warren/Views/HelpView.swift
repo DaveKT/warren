@@ -100,6 +100,7 @@ struct HelpView: View {
                     Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 4) {
                         shortcutRow("⌘T", "New tab")
                         shortcutRow("⌘W", "Close tab")
+                        shortcutRow("⌃⇥  /  ⌃⇧⇥", "Next / Previous tab")
                         shortcutRow("⌘[  /  ⌘]", "Back / Forward")
                         shortcutRow("⌘R", "Reload page")
                         shortcutRow("⇧⌘H", "Home")

@@ -44,3 +44,31 @@ Right now, the only protocol supported is Gopher. Gemini is another similar prot
 ## Rearrange Tabs ✅ DONE 2026-09-12
 
 ~~In the current version, the tabs can not be rearranged. The user would benefit from being able to reorder the tabs by drag and drop. Additionally, the user would benefit from a keyboard shortcut that would allow them to cycle through the tabs.~~ Tabs reorder live by drag and drop in the tab bar; Go menu → Show Next Tab (⌃⇥) / Show Previous Tab (⌃⇧⇥) cycle through tabs, wrapping at the ends.
+
+## Subtle Accent Colors, Gopher Themes
+
+At the moment, the UI is monocrome. This should be kept as the default but the user should have the ability to enhance their experience with subtle accent colors chosen from a setting menu. The additional colors should be added sparingly. They should also be adapted when dark mode is selected. Possible color schemes.
+
+**Gopher Moss**
+
+#5d5a2f, #89865b, #ac7838, #ced552, #e9e275
+
+**Gopher Sunset**
+
+#3e9cbf, #a7ecf2, #f2c43d, #f17c37, #f26d50
+
+**Gopher Roots**
+
+#555559, #c9bca4, #bb525b, #b8893d, #92b558
+
+### Color Active Tab
+
+At the moment there is only a small 'x' on the active tab. This can make it difficult for the user to spot which is the active tab. By adding a subtle fill color to the tab it would be much easier to spot. The color should be in keeping with the gopher theme.
+
+## Signed Application
+
+At the moment, the application is unsigned. This requires the user to go through extra steps to provide permissions for the install. Signing would enable direct install and enable other icloud features.
+
+## Automatic Updates
+
+With the current version, the user must take action to update to the latest version of the application. It would be easier if there were a check for updates mechanism so the user could check and install updates without the any extra steps.

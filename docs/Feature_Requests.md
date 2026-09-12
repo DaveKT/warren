@@ -37,6 +37,10 @@
 
 Right now, the only protocol supported is Gopher. Gemini is another similar protocol that users of gopher will sometimes run into and use. Warren should support Gemini.
 
+## DMG Packaging Script Switch
+
+1. Release DMGs are currently created with `hdiutil create`, which macOS now flags as deprecated in favor of `diskutil image create`. Switch the DMG packaging to `diskutil image create` (and script it as part of `Scripts/build-app.sh` or a companion release script) before `hdiutil` is removed in a future macOS release.
+
 ## Rearrange Tabs ✅ DONE 2026-09-12
 
 ~~In the current version, the tabs can not be rearranged. The user would benefit from being able to reorder the tabs by drag and drop. Additionally, the user would benefit from a keyboard shortcut that would allow them to cycle through the tabs.~~ Tabs reorder live by drag and drop in the tab bar; Go menu → Show Next Tab (⌃⇥) / Show Previous Tab (⌃⇧⇥) cycle through tabs, wrapping at the ends.

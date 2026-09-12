@@ -4,6 +4,15 @@ A native Swift/SwiftUI Gopher browser for macOS, implementing the Gopher
 protocol as specified in [RFC 1436](https://www.rfc-editor.org/rfc/rfc1436)
 with gopher URLs per [RFC 4266](https://www.rfc-editor.org/rfc/rfc4266).
 
+## Install
+
+Download the latest DMG or zip from the
+[Releases page](https://github.com/DaveKT/warren/releases/latest), open it,
+and drag Warren to the Applications folder. Requires macOS 14+.
+
+The app is ad-hoc signed; on first launch, right-click Warren.app and
+choose Open to pass Gatekeeper.
+
 ## Features
 
 - **Full RFC 1436 support** — all canonical item types:
@@ -31,6 +40,10 @@ with gopher URLs per [RFC 4266](https://www.rfc-editor.org/rfc/rfc4266).
   clear-by-age (past hour / 4 hours / day / all)
 - **Save as TXT / Markdown** — ⌘S / ⇧⌘S; menus become Markdown link lists,
   text pages are fenced to preserve formatting
+- **Text size** — ⌘+ / ⌘− / ⌘0 scale page content (chrome stays put);
+  the chosen size persists across launches
+- **gopher:// link handling** — Warren registers as the system handler,
+  so gopher links clicked in Safari, PDFs, or other apps open in a new tab
 - **Help** — ⌘? opens a help window with a Gopher primer, item-type
   reference, and keyboard shortcuts
 - UTF-8 with Latin-1 fallback for legacy servers; monospaced rendering so

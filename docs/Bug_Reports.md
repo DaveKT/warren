@@ -11,3 +11,6 @@ The markdown export for gopher://sava.rocks/1/blog/when-the-small-web-gets-an-ai
 Also fixed while in there: `URL:` links now export their real target, duplicated
 page titles are dropped, and `* ` info lines become real markdown bullets.
 
+## Link from External Source not Working Correctly
+
+When clicking on a gopher link in an external application like Safari or a PDF, macOS correctly offers to open the link in Warren. Warren will open a new window and the page will be the current page open, not the link clicked. Expected behavior is a new tab will open (not a new window) to the link clicked in the external application.

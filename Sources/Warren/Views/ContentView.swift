@@ -25,6 +25,9 @@ struct ContentView: View {
             }
         }
         .toolbar { toolbarContent }
+        // The title still names the window (Window menu, Mission Control)
+        // but is hidden from the toolbar to leave room for the buttons.
+        .toolbarTitleHidden()
         .navigationTitle(store.selectedTab?.title ?? "Warren")
         .sheet(item: $store.searchPrompt) { prompt in
             SearchPromptView(prompt: prompt)
@@ -76,9 +79,11 @@ struct ContentView: View {
         }
 
         ToolbarItemGroup(placement: .primaryAction) {
-            bookmarkToggleButton
-            BookmarksMenu()
-            saveMenu
+            ControlGroup {
+                bookmarkToggleButton
+                BookmarksMenu()
+                saveMenu
+            }
         }
     }
 
@@ -112,6 +117,18 @@ struct ContentView: View {
         }
         .help("Save Page As…")
         .disabled(!(store.selectedTab.map { PageExporter.canExport($0.content) } ?? false))
+    }
+}
+
+private extension View {
+    /// `toolbar(removing: .title)` needs macOS 15; the app deploys to 14.0,
+    /// where the title stays visible.
+    @ViewBuilder func toolbarTitleHidden() -> some View {
+        if #available(macOS 15.0, *) {
+            toolbar(removing: .title)
+        } else {
+            self
+        }
     }
 }
 

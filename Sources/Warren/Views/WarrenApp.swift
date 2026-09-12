@@ -19,6 +19,11 @@ struct WarrenApp: App {
                 .environmentObject(bookmarks)
                 .environmentObject(history)
                 .frame(minWidth: 700, minHeight: 450)
+                // gopher:// links from other apps: any existing window may
+                // claim the event (so no new window is spawned)…
+                .handlesExternalEvents(preferring: [], allowing: ["*"])
+                // …and the link opens in a new tab of that window.
+                .onOpenURL { store.openExternal($0) }
         }
         .defaultSize(width: 1000, height: 720)
         .commands {
@@ -43,6 +48,10 @@ struct WarrenApp: App {
                 }
                 .keyboardShortcut("s", modifiers: [.command, .shift])
                 .disabled(!canExportCurrent)
+            }
+            CommandGroup(after: .toolbar) {
+                Divider()
+                TextSizeCommands()
             }
             CommandMenu("Go") {
                 Button("Back") { store.goBack() }
@@ -94,6 +103,24 @@ struct WarrenApp: App {
     private var canExportCurrent: Bool {
         guard let tab = store.selectedTab else { return false }
         return PageExporter.canExport(tab.content)
+    }
+}
+
+/// View menu commands for the content text size (⌘+ / ⌘− / ⌘0).
+/// Only page content scales; window chrome stays at the default size.
+private struct TextSizeCommands: View {
+    @AppStorage(ContentTextSize.storageKey) private var size = ContentTextSize.default
+
+    var body: some View {
+        Button("Make Text Bigger") { size = min(size + ContentTextSize.step, ContentTextSize.range.upperBound) }
+            .keyboardShortcut("+", modifiers: .command)
+            .disabled(size >= ContentTextSize.range.upperBound)
+        Button("Make Text Smaller") { size = max(size - ContentTextSize.step, ContentTextSize.range.lowerBound) }
+            .keyboardShortcut("-", modifiers: .command)
+            .disabled(size <= ContentTextSize.range.lowerBound)
+        Button("Actual Size") { size = ContentTextSize.default }
+            .keyboardShortcut("0", modifiers: .command)
+            .disabled(size == ContentTextSize.default)
     }
 }
 

@@ -1,5 +1,14 @@
 import SwiftUI
 
+/// User-adjustable size for page content text, persisted in UserDefaults
+/// and adjusted from the View menu (⌘+ / ⌘− / ⌘0).
+enum ContentTextSize {
+    static let storageKey = "contentTextSize"
+    static let `default`: Double = 13
+    static let range: ClosedRange<Double> = 9...24
+    static let step: Double = 1
+}
+
 /// Renders a Gopher menu (type 1 / 7 results). Monospaced throughout so
 /// the ASCII art that Gopherspace loves stays aligned.
 struct MenuPageView: View {
@@ -30,6 +39,7 @@ private struct MenuRow: View {
     @EnvironmentObject private var store: BrowserStore
     let item: GopherItem
     @State private var isHovering = false
+    @AppStorage(ContentTextSize.storageKey) private var textSize = ContentTextSize.default
 
     var body: some View {
         switch item.type {
@@ -37,7 +47,7 @@ private struct MenuRow: View {
             HStack(spacing: 8) {
                 Color.clear.frame(width: 16, height: 1)
                 Text(item.display.isEmpty ? " " : item.display)
-                    .font(.system(.body, design: .monospaced))
+                    .font(.system(size: textSize, design: .monospaced))
                     .textSelection(.enabled)
             }
             .padding(.vertical, 1)
@@ -47,7 +57,7 @@ private struct MenuRow: View {
                     .foregroundStyle(.red)
                     .frame(width: 16)
                 Text(item.display)
-                    .font(.system(.body, design: .monospaced))
+                    .font(.system(size: textSize, design: .monospaced))
                     .foregroundStyle(.red)
                     .textSelection(.enabled)
             }
@@ -64,7 +74,7 @@ private struct MenuRow: View {
                     .foregroundStyle(isHovering ? Color.accentColor : Color.secondary)
                     .frame(width: 16)
                 Text(item.display)
-                    .font(.system(.body, design: .monospaced))
+                    .font(.system(size: textSize, design: .monospaced))
                     .foregroundStyle(Color.accentColor)
                     .underline(isHovering)
                 Text(item.type?.label ?? String(item.typeChar))
@@ -99,11 +109,12 @@ private struct MenuRow: View {
 struct TextPageView: View {
     let text: String
     var memory: ScrollMemory? = nil
+    @AppStorage(ContentTextSize.storageKey) private var textSize = ContentTextSize.default
 
     var body: some View {
         ScrollView([.vertical, .horizontal]) {
             Text(text)
-                .font(.system(.body, design: .monospaced))
+                .font(.system(size: textSize, design: .monospaced))
                 .textSelection(.enabled)
                 .padding(16)
                 .frame(maxWidth: .infinity, alignment: .leading)

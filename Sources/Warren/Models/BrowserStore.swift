@@ -72,6 +72,16 @@ final class BrowserStore: ObservableObject {
         open(address)
     }
 
+    /// Entry point for gopher:// URLs handed to us by macOS — links
+    /// clicked in Safari, PDFs, or other apps. Opens in a new tab.
+    func openExternal(_ url: URL) {
+        guard let address = GopherAddress.parse(url.absoluteString) else {
+            statusMessage = "Not a valid Gopher address: \(url.absoluteString)"
+            return
+        }
+        open(address, inNewTab: true)
+    }
+
     /// Entry point for clicking a menu item.
     func open(item: GopherItem, inNewTab: Bool = false) {
         guard let address = item.address else { return }

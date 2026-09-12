@@ -4,7 +4,7 @@ A native Swift/SwiftUI Gopher browser for macOS, implementing the Gopher
 protocol as specified in [RFC 1436](https://www.rfc-editor.org/rfc/rfc1436)
 with gopher URLs per [RFC 4266](https://www.rfc-editor.org/rfc/rfc4266).
 
-![](docs/imgs/Warren_Screens.png)
+![Warren showing its home page with bookmarks, and a second window browsing the Floodgap gopher menu in tabs](docs/imgs/Warren_Screens.png)
 
 ## Install
 

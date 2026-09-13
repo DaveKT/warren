@@ -93,6 +93,15 @@ private struct TabButton: View {
     @ObservedObject var tab: BrowserTab
     let isSelected: Bool
     @State private var isHovering = false
+    @Environment(\.colorScheme) private var colorScheme
+
+    /// Gopher Moss #ac7838, from the planned theme palettes; a subtle
+    /// fill so the active tab is easy to spot. Dark mode needs a bit
+    /// more of it to read against the darker bar.
+    private var activeTabTint: Color {
+        Color(red: 0xAC / 255, green: 0x78 / 255, blue: 0x38 / 255)
+            .opacity(colorScheme == .dark ? 0.32 : 0.22)
+    }
 
     var body: some View {
         HStack(spacing: 6) {
@@ -119,7 +128,12 @@ private struct TabButton: View {
         }
         .padding(.horizontal, 10)
         .frame(width: 170, height: 30)
-        .background(isSelected ? AnyShapeStyle(.background) : AnyShapeStyle(.clear))
+        .background {
+            if isSelected {
+                Rectangle().fill(.background)
+                activeTabTint
+            }
+        }
         .overlay(alignment: .trailing) { Divider().frame(height: 16) }
         .contentShape(Rectangle())
         .onTapGesture { store.selectTab(tab) }

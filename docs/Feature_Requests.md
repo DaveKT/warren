@@ -4,7 +4,7 @@
 
 1. ~~Add a feature that can save the browsing history to be easily be called by the user at a later date.~~ History menu + ⌘Y manager with search; persisted across launches.
 2. ~~Add a feature to clear the history from the past hour, 4 hours, day, or all.~~ Clear History submenu and manager Clear… menu (clear-all asks for confirmation).
-3. ~~All the user to remove one or more items from the history individually.~~ Multi-select removal and per-row context menu in the manager.
+3. ~~Allow the user to remove one or more items from the history individually.~~ Multi-select removal and per-row context menu in the manager.
 
 ## Application Help ✅ DONE 2026-09-11
 
@@ -23,7 +23,7 @@
 
 ## Support for Bookmark Folders ✅ DONE 2026-09-11
 
-1. ~~All the user to organize and retrieve bookmarks to and from folders in the app.~~ Nestable folders: add sheet picks a destination folder, manager offers new-folder/rename/move-to/remove on an outline view, and folders show as submenus in the Bookmarks menus and on the home page. bookmarks.json is now versioned (v2) with automatic migration.
+1. ~~Allow the user to organize and retrieve bookmarks to and from folders in the app.~~ Nestable folders: add sheet picks a destination folder, manager offers new-folder/rename/move-to/remove on an outline view, and folders show as submenus in the Bookmarks menus and on the home page. bookmarks.json is now versioned (v2) with automatic migration.
 
 ## Control for Text Sizes ✅ DONE 2026-09-12
 
@@ -37,9 +37,9 @@
 
 Right now, the only protocol supported is Gopher. Gemini is another similar protocol that users of gopher will sometimes run into and use. Warren should support Gemini.
 
-## DMG Packaging Script Switch
+## DMG Packaging Script Switch ✅ DONE 2026-09-13
 
-1. Release DMGs are currently created with `hdiutil create`, which macOS now flags as deprecated in favor of `diskutil image create`. Switch the DMG packaging to `diskutil image create` (and script it as part of `Scripts/build-app.sh` or a companion release script) before `hdiutil` is removed in a future macOS release.
+1. ~~Release DMGs are currently created with `hdiutil create`, which macOS now flags as deprecated in favor of `diskutil image create`. Switch the DMG packaging to `diskutil image create` (and script it as part of `Scripts/build-app.sh` or a companion release script) before `hdiutil` is removed in a future macOS release.~~ `Scripts/make-dmg.sh` builds the app and packages it as a compressed (UDZO) versioned DMG with an /Applications drop link, via `diskutil image create from`.
 
 ## Rearrange Tabs ✅ DONE 2026-09-12
 
@@ -61,9 +61,9 @@ At the moment, the UI is monocrome. This should be kept as the default but the u
 
 #555559, #c9bca4, #bb525b, #b8893d, #92b558
 
-### Color Active Tab
+### Color Active Tab ✅ DONE 2026-09-13
 
-At the moment there is only a small 'x' on the active tab. This can make it difficult for the user to spot which is the active tab. By adding a subtle fill color to the tab it would be much easier to spot. The color should be in keeping with the gopher theme.
+~~At the moment there is only a small 'x' on the active tab. This can make it difficult for the user to spot which is the active tab. By adding a subtle fill color to the tab it would be much easier to spot. The color should be in keeping with the gopher theme.~~ The active tab now carries a subtle Gopher Moss (#ac7838) fill, slightly stronger in dark mode so it stays visible.
 
 ## Signed Application
 

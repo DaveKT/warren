@@ -19,7 +19,7 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
 <dict>
     <key>CFBundleName</key>            <string>Warren</string>
     <key>CFBundleDisplayName</key>     <string>Warren</string>
-    <key>CFBundleIdentifier</key>      <string>com.warren.gopher-browser</string>
+    <key>CFBundleIdentifier</key>      <string>app.warren1436.Warren</string>
     <key>CFBundleExecutable</key>      <string>Warren</string>
     <key>CFBundlePackageType</key>     <string>APPL</string>
     <key>CFBundleShortVersionString</key> <string>1.2b</string>
@@ -61,6 +61,15 @@ fi
 
 # sips/iconutil leave extended attributes behind that codesign rejects.
 xattr -cr "$APP"
-codesign --force --sign - "$APP"
+
+# Developer ID + hardened runtime (required for notarization) when the
+# identity is present; ad-hoc otherwise so dev builds still work.
+SIGN_ID="${WARREN_SIGN_ID:-Developer ID Application}"
+if security find-identity -v -p codesigning | grep -q "$SIGN_ID"; then
+    codesign --force --options runtime --timestamp --sign "$SIGN_ID" "$APP"
+else
+    echo "No '$SIGN_ID' identity found; ad-hoc signing (dev build, not for release)."
+    codesign --force --sign - "$APP"
+fi
 
 echo "Done: $PWD/$APP"

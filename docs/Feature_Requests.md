@@ -65,9 +65,9 @@ At the moment, the UI is monocrome. This should be kept as the default but the u
 
 ~~At the moment there is only a small 'x' on the active tab. This can make it difficult for the user to spot which is the active tab. By adding a subtle fill color to the tab it would be much easier to spot. The color should be in keeping with the gopher theme.~~ The active tab now carries a subtle Gopher Moss (#ac7838) fill, slightly stronger in dark mode so it stays visible.
 
-## Signed Application
+## Signed Application ✅ DONE 2026-09-13
 
-At the moment, the application is unsigned. This requires the user to go through extra steps to provide permissions for the install. Signing would enable direct install and enable other icloud features.
+~~At the moment, the application is unsigned. This requires the user to go through extra steps to provide permissions for the install. Signing would enable direct install and enable other icloud features.~~ Builds are signed with the Developer ID Application certificate (hardened runtime + timestamp) when present, falling back to ad-hoc for dev machines. `make-dmg.sh` signs the DMG, notarizes it with Apple (keychain profile `warren-notary`), staples the ticket, and verifies with Gatekeeper. Bundle ID changed to `app.warren1436.Warren`.
 
 ## Automatic Updates
 

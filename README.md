@@ -12,8 +12,8 @@ Download the latest DMG or zip from the
 [Releases page](https://github.com/DaveKT/warren/releases/latest), open it,
 and drag Warren to the Applications folder. Requires macOS 14+.
 
-The app is ad-hoc signed; on first launch, right-click Warren.app and
-choose Open to pass Gatekeeper.
+The app is Developer ID signed and notarized by Apple, so it opens
+directly — no Gatekeeper workarounds needed.
 
 ## Features
 

@@ -72,3 +72,13 @@ At the moment, the UI is monocrome. This should be kept as the default but the u
 ## Automatic Updates
 
 With the current version, the user must take action to update to the latest version of the application. It would be easier if there were a check for updates mechanism so the user could check and install updates without the any extra steps.
+
+## Command-Z Undo Close Tab
+
+Today, when a user closes a tab, there is no way to call that same tab and its state (history, etc). Being able to undo a closed tab would be very helpful. 
+
+## Command-F Find on Page
+
+Allowing a user to find text in the active tabs using command F would help users conduct research. The find dialog could include an option to search across all open tabs. Additionally, it could support regex find. It should include both UI and keyboard shortcuts to move to and back from the next instance of the matched string. The find dialog should be minimally intrusive.
+
+

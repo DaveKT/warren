@@ -73,9 +73,13 @@ At the moment, the UI is monocrome. This should be kept as the default but the u
 
 With the current version, the user must take action to update to the latest version of the application. It would be easier if there were a check for updates mechanism so the user could check and install updates without the any extra steps.
 
-## Command-Z Undo Close Tab
+## Command-Z Undo Close Tab ✅ DONE 2026-10-16
 
-Today, when a user closes a tab, there is no way to call that same tab and its state (history, etc). Being able to undo a closed tab would be very helpful. 
+~~Today, when a user closes a tab, there is no way to call that same tab and its state (history, etc). Being able to undo a closed tab would be very helpful.~~ ⌘Z (Edit → Undo Close Tab) reopens the most recently closed tab in its original position with its history, cached pages, and scroll positions; Redo (⇧⌘Z) closes it again. History → Reopen Closed Tab (⇧⌘T) does the same from the menu. Each window remembers its last 20 closed tabs for the current session only; blank tabs aren't remembered. While typing in the address bar, ⌘Z still undoes typing.
+
+## Restore Last Session
+
+When the app is launched, allow the user to restore their last session — the windows and tabs that were open when Warren last quit, including each tab's back/forward history — similar to Safari's History → Reopen All Windows from Last Session. It could also be offered as a setting to always restore the previous session at launch.
 
 ## Command-F Find on Page
 

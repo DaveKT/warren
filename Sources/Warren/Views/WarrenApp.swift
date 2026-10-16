@@ -33,6 +33,7 @@ private struct BrowserWindow: View {
     static let sceneID = "browser"
 
     @StateObject private var store: BrowserStore
+    @Environment(\.undoManager) private var undoManager
 
     init(history: HistoryStore) {
         _store = StateObject(wrappedValue: BrowserStore(history: history))
@@ -43,6 +44,8 @@ private struct BrowserWindow: View {
             .environmentObject(store)
             // Menu-bar commands act on the frontmost window's store.
             .focusedSceneObject(store)
+            .onAppear { store.undoManager = undoManager }
+            .onChange(of: undoManager) { store.undoManager = undoManager }
             // A link from another app opens in a new tab of this window.
             .onOpenURL { store.openExternal($0) }
     }
@@ -105,6 +108,9 @@ private struct BrowserCommands: Commands {
                 .disabled((store?.tabs.count ?? 0) < 2)
         }
         CommandMenu("History") {
+            Button("Reopen Closed Tab") { store?.reopenLastClosedTab() }
+                .keyboardShortcut("t", modifiers: [.command, .shift])
+                .disabled(!(store?.canReopenClosedTab ?? false))
             Button("Show All History…") { store?.showHistoryManager = true }
                 .keyboardShortcut("y", modifiers: .command)
                 .disabled(store == nil)

@@ -10,6 +10,19 @@ struct SearchPrompt: Identifiable {
     var itemTitle: String
 }
 
+/// A tab closed in this session, kept so it can be reopened with its
+/// history and cached pages intact. Also serves as the undo target, so
+/// its undo action can be dropped when it ages out of the list.
+private final class ClosedTab {
+    let tab: BrowserTab
+    let index: Int
+
+    init(tab: BrowserTab, index: Int) {
+        self.tab = tab
+        self.index = index
+    }
+}
+
 /// The tabs and navigation state of one browser window.
 @MainActor
 final class BrowserStore: ObservableObject {
@@ -20,6 +33,24 @@ final class BrowserStore: ObservableObject {
     @Published var statusMessage = ""
     @Published var showHistoryManager = false
     @Published var showAddBookmark = false
+
+    static let maxClosedTabs = 20
+    @Published private var closedTabs: [ClosedTab] = []
+
+    /// The window's undo manager, shared with its text fields so ⌘Z
+    /// undoes typing while editing and reopens closed tabs otherwise.
+    weak var undoManager: UndoManager? {
+        didSet {
+            guard undoManager !== oldValue else { return }
+            observeUndoGroups()
+        }
+    }
+
+    /// Closed tabs whose undo actions must be dropped once the current
+    /// undo group closes; removing them while a group is open leaves
+    /// dead steps on the undo stack.
+    private var pendingUndoRemovals: [ClosedTab] = []
+    private var undoGroupObserver: NSObjectProtocol?
 
     /// Global visit history; injected so it stays app-owned and shared
     /// across windows.
@@ -52,10 +83,83 @@ final class BrowserStore: ObservableObject {
         } else if selectedTabID == tab.id {
             selectTab(tabs[min(index, tabs.count - 1)])
         }
+        // A blank tab has nothing worth bringing back.
+        if !tab.history.isEmpty {
+            rememberClosedTab(ClosedTab(tab: tab, index: index))
+        }
     }
 
     func closeSelectedTab() {
         if let tab = selectedTab { closeTab(tab) }
+    }
+
+    var canReopenClosedTab: Bool { !closedTabs.isEmpty }
+
+    /// Reopen Closed Tab (⇧⌘T): brings back the most recently closed tab
+    /// without going through the undo stack.
+    func reopenLastClosedTab() {
+        guard let entry = closedTabs.last else { return }
+        removeUndoActions(for: entry)
+        reopen(entry)
+        undoManager?.setActionName("Reopen Closed Tab")
+    }
+
+    private func rememberClosedTab(_ entry: ClosedTab) {
+        closedTabs.append(entry)
+        if closedTabs.count > Self.maxClosedTabs {
+            removeUndoActions(for: closedTabs.removeFirst())
+        }
+        undoManager?.registerUndo(withTarget: entry) { [weak self] entry in
+            MainActor.assumeIsolated { self?.reopen(entry) }
+        }
+        undoManager?.setActionName("Close Tab")
+    }
+
+    private func reopen(_ entry: ClosedTab) {
+        guard let position = closedTabs.firstIndex(where: { $0 === entry }) else { return }
+        closedTabs.remove(at: position)
+
+        // Closing the last tab leaves a blank one behind; take its place.
+        if tabs.count == 1, tabs[0].history.isEmpty {
+            tabs = [entry.tab]
+        } else {
+            tabs.insert(entry.tab, at: min(entry.index, tabs.count))
+        }
+        selectTab(entry.tab)
+
+        // Registering the inverse while undoing makes it the redo action.
+        undoManager?.registerUndo(withTarget: entry.tab) { [weak self] tab in
+            MainActor.assumeIsolated { self?.closeTab(tab) }
+        }
+        undoManager?.setActionName("Close Tab")
+    }
+
+    private func removeUndoActions(for entry: ClosedTab) {
+        guard let undoManager else { return }
+        if undoManager.groupingLevel == 0 {
+            undoManager.removeAllActions(withTarget: entry)
+        } else {
+            pendingUndoRemovals.append(entry)
+        }
+    }
+
+    private func observeUndoGroups() {
+        if let undoGroupObserver { NotificationCenter.default.removeObserver(undoGroupObserver) }
+        undoGroupObserver = nil
+        pendingUndoRemovals.removeAll()
+        guard let undoManager else { return }
+        undoGroupObserver = NotificationCenter.default.addObserver(
+            forName: .NSUndoManagerDidCloseUndoGroup, object: undoManager, queue: nil
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.flushPendingUndoRemovals() }
+        }
+    }
+
+    private func flushPendingUndoRemovals() {
+        guard let undoManager, undoManager.groupingLevel == 0, !pendingUndoRemovals.isEmpty else { return }
+        let entries = pendingUndoRemovals
+        pendingUndoRemovals.removeAll()
+        for entry in entries { undoManager.removeAllActions(withTarget: entry) }
     }
 
     func selectTab(_ tab: BrowserTab) {

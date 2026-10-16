@@ -29,7 +29,9 @@ directly — no Gatekeeper workarounds needed.
   - Plus the de facto extensions `i` (info), `h` (HTML/`URL:` links opened
     in your web browser), `s` (sound), `p` (PNG), `d` (document)
 - **Tabs** — ⌘T new tab, ⌘W close tab, per-tab history; drag tabs to
-  reorder them, ⌃⇥ / ⌃⇧⇥ cycle through tabs
+  reorder them, ⌃⇥ / ⌃⇧⇥ cycle through tabs. ⌘Z (or ⇧⌘T) reopens a
+  closed tab with its history intact — the last 20 per window, for the
+  current session. Each window keeps its own tabs
 - **Back / Forward / Reload** — ⌘[ , ⌘] , ⌘R, with instant cached history
 - **Bookmarks** — ⌘D opens an add sheet with title and folder choice;
   nestable folders appear as submenus in the toolbar and menu bar and as

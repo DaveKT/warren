@@ -35,7 +35,9 @@ struct HelpView: View {
                     (or ⌘[ and ⌘]) to go back and forward — Warren remembers \
                     where you were scrolled on each page. ⌘R reloads. Open links \
                     in a new tab from their right-click menu, and manage tabs \
-                    with ⌘T and ⌘W.
+                    with ⌘T and ⌘W. Closed a tab by mistake? ⌘Z (or ⇧⌘T) brings \
+                    it back with its history — up to the last 20 closed tabs in \
+                    each window. Each window (⌘N) keeps its own set of tabs.
                     """)
                 }
 
@@ -100,6 +102,7 @@ struct HelpView: View {
                     Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 4) {
                         shortcutRow("⌘T", "New tab")
                         shortcutRow("⌘W", "Close tab")
+                        shortcutRow("⌘Z  /  ⇧⌘T", "Undo close tab / Reopen closed tab")
                         shortcutRow("⌃⇥  /  ⌃⇧⇥", "Next / Previous tab")
                         shortcutRow("⌘[  /  ⌘]", "Back / Forward")
                         shortcutRow("⌘R", "Reload page")

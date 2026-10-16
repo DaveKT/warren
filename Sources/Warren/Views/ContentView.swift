@@ -78,6 +78,12 @@ struct ContentView: View {
                 }
         }
 
+        // macOS 27 places primary actions right after the address field
+        // unless something pushes them to the trailing edge.
+        if #available(macOS 26.0, *) {
+            ToolbarSpacer(.flexible, placement: .primaryAction)
+        }
+
         ToolbarItemGroup(placement: .primaryAction) {
             ControlGroup {
                 bookmarkToggleButton

@@ -18,3 +18,7 @@ page titles are dropped, and `* ` info lines become real markdown bullets.
 ## Windows Mirror Each Other ✅ RESOLVED 2026-10-16
 
 ~~Every window shared a single set of tabs: opening a second window (⌘N) showed the same tabs and the same selected tab as the first, and actions in one window changed the other.~~ Fixed: each window now owns its own tabs and navigation state, and menu-bar commands act on the frontmost window (disabled when no window is open; ⌘T then opens a new window). History and bookmarks remain shared app-wide. A gopher:// link that arrives when macOS creates a fresh window now loads into that window's blank tab instead of opening beside it.
+
+## Toolbar Buttons Drift Next to the URL Field on macOS 27 ✅ RESOLVED 2026-10-16
+
+~~On macOS 27, the bookmark / bookmarks-menu / export button group sits immediately after the URL field instead of at the trailing edge of the toolbar, leaving an empty gap on the right.~~ Fixed: macOS 27 no longer pushes primary-action toolbar items to the trailing edge on its own; a flexible toolbar spacer (macOS 26+) now does, restoring the original layout. The toolbar code hadn't changed — this came with the OS update.

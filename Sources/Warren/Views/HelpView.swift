@@ -110,20 +110,47 @@ struct HelpView: View {
                 }
 
                 section("Keyboard shortcuts") {
-                    Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 4) {
-                        shortcutRow("⌘T", "New tab")
-                        shortcutRow("⌘W", "Close tab")
-                        shortcutRow("⌘Z  /  ⇧⌘T", "Undo close tab / Reopen closed tab")
-                        shortcutRow("⌃⇥  /  ⌃⇧⇥", "Next / Previous tab")
-                        shortcutRow("⌘[  /  ⌘]", "Back / Forward")
-                        shortcutRow("⌘R", "Reload page")
-                        shortcutRow("⌘F", "Find on page")
-                        shortcutRow("⌘G  /  ⇧⌘G", "Next / Previous match")
-                        shortcutRow("⇧⌘H", "Home")
-                        shortcutRow("⌘D", "Add bookmark")
-                        shortcutRow("⌘Y", "Show history")
-                        shortcutRow("⌘S  /  ⇧⌘S", "Save as text / Markdown")
-                        shortcutRow("⌘?", "This help")
+                    HStack(alignment: .top, spacing: 40) {
+                        VStack(alignment: .leading, spacing: 18) {
+                            shortcutGroup("Tabs & Windows", [
+                                ("⌘N", "New window"),
+                                ("⌘T", "New tab"),
+                                ("⌘W", "Close tab"),
+                                ("⌘Z", "Undo close tab"),
+                                ("⇧⌘T", "Reopen closed tab"),
+                                ("⌃⇥", "Next tab"),
+                                ("⌃⇧⇥", "Previous tab"),
+                            ])
+                            shortcutGroup("Navigation", [
+                                ("⌘[", "Back"),
+                                ("⌘]", "Forward"),
+                                ("⌘R", "Reload page"),
+                                ("⇧⌘H", "Home"),
+                            ])
+                            shortcutGroup("Bookmarks & History", [
+                                ("⌘D", "Add bookmark"),
+                                ("⌘Y", "Show history"),
+                            ])
+                        }
+                        VStack(alignment: .leading, spacing: 18) {
+                            shortcutGroup("Find", [
+                                ("⌘F", "Find on page"),
+                                ("⌘G", "Next match"),
+                                ("⇧⌘G", "Previous match"),
+                            ])
+                            shortcutGroup("Text Size", [
+                                ("⌘+", "Make text bigger"),
+                                ("⌘−", "Make text smaller"),
+                                ("⌘0", "Actual size"),
+                            ])
+                            shortcutGroup("Saving", [
+                                ("⌘S", "Save as text"),
+                                ("⇧⌘S", "Save as Markdown"),
+                            ])
+                            shortcutGroup("Help", [
+                                ("⌘?", "Warren Help"),
+                            ])
+                        }
                     }
                 }
 
@@ -167,13 +194,36 @@ struct HelpView: View {
         .padding(.leading, 8)
     }
 
-    private func shortcutRow(_ keys: String, _ action: String) -> some View {
-        GridRow {
-            Text(keys)
-                .font(.system(.body, design: .monospaced))
-                .gridColumnAlignment(.trailing)
-            Text(action).foregroundStyle(.secondary)
+    /// One titled group of shortcuts. The key column has a fixed width so
+    /// keys line up across every group.
+    private func shortcutGroup(_ title: String, _ shortcuts: [(keys: String, action: String)]) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+            ForEach(shortcuts, id: \.keys) { shortcut in
+                HStack(spacing: 10) {
+                    KeyCap(keys: shortcut.keys)
+                        .frame(width: 52, alignment: .trailing)
+                    Text(shortcut.action)
+                }
+            }
         }
+    }
+}
+
+/// A key combination drawn as a small keycap, e.g. ⇧⌘T.
+private struct KeyCap: View {
+    let keys: String
+
+    var body: some View {
+        Text(keys)
+            .font(.callout.weight(.medium))
+            .tracking(1)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 1)
+            .background(RoundedRectangle(cornerRadius: 4).fill(Color(nsColor: .quaternarySystemFill)))
+            .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(Color(nsColor: .separatorColor)))
     }
 }
 

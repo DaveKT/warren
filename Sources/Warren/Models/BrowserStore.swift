@@ -37,6 +37,9 @@ final class BrowserStore: ObservableObject {
     static let maxClosedTabs = 20
     @Published private var closedTabs: [ClosedTab] = []
 
+    /// Find on Page (⌘F) for this window.
+    private(set) lazy var finder = PageFinder(store: self)
+
     /// The window's undo manager, shared with its text fields so ⌘Z
     /// undoes typing while editing and reopens closed tabs otherwise.
     weak var undoManager: UndoManager? {

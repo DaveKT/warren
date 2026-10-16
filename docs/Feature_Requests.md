@@ -81,8 +81,8 @@ With the current version, the user must take action to update to the latest vers
 
 When the app is launched, allow the user to restore their last session — the windows and tabs that were open when Warren last quit, including each tab's back/forward history — similar to Safari's History → Reopen All Windows from Last Session. It could also be offered as a setting to always restore the previous session at launch.
 
-## Command-F Find on Page
+## Command-F Find on Page ✅ DONE 2026-10-16
 
-Allowing a user to find text in the active tabs using command F would help users conduct research. The find dialog could include an option to search across all open tabs. Additionally, it could support regex find. It should include both UI and keyboard shortcuts to move to and back from the next instance of the matched string. The find dialog should be minimally intrusive.
+~~Allowing a user to find text in the active tabs using command F would help users conduct research. The find dialog could include an option to search across all open tabs. Additionally, it could support regex find. It should include both UI and keyboard shortcuts to move to and back from the next instance of the matched string. The find dialog should be minimally intrusive.~~ Edit → Find (⌘F) opens a slim bar under the tab bar, with the search field and controls centered on the page, that highlights matches as you type (the current match in bright yellow, others in the Gopher Moss wash used by the active tab) and scrolls to the current one. ◀ ▶ buttons, ⌘G / ⇧⌘G, and Return / ⇧Return move between matches (wrapping); Esc or Done closes it. Toggles for Match Case (Aa), Regular Expression (.*), and All Tabs — with All Tabs on, Next/Previous step into the next tab with matches, and the count shows how many tabs matched. Works on menus and text files; matches are found within single lines.
 
 

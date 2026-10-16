@@ -90,6 +90,17 @@ struct HelpView: View {
                     """)
                 }
 
+                section("Finding text") {
+                    Text("""
+                    Press ⌘F to search the current page; matches are highlighted \
+                    as you type. Return or ⌘G moves to the next match, ⇧Return or \
+                    ⇧⌘G to the previous one, and Esc closes the find bar. Aa \
+                    matches case, .* treats the search as a regular expression, \
+                    and All Tabs searches every tab in the window — Next and \
+                    Previous then step from tab to tab.
+                    """)
+                }
+
                 section("Saving pages") {
                     Text("""
                     Save any menu or text page with ⌘S (plain text) or ⇧⌘S \
@@ -106,6 +117,8 @@ struct HelpView: View {
                         shortcutRow("⌃⇥  /  ⌃⇧⇥", "Next / Previous tab")
                         shortcutRow("⌘[  /  ⌘]", "Back / Forward")
                         shortcutRow("⌘R", "Reload page")
+                        shortcutRow("⌘F", "Find on page")
+                        shortcutRow("⌘G  /  ⇧⌘G", "Next / Previous match")
                         shortcutRow("⇧⌘H", "Home")
                         shortcutRow("⌘D", "Add bookmark")
                         shortcutRow("⌘Y", "Show history")

@@ -3,12 +3,17 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject private var store: BrowserStore
     @EnvironmentObject private var bookmarks: BookmarkStore
+    @EnvironmentObject private var finder: PageFinder
     @FocusState private var addressFieldFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
             TabBarView()
             Divider()
+            if finder.isVisible {
+                FindBar(finder: finder)
+                Divider()
+            }
             if let tab = store.selectedTab {
                 TabContentView(tab: tab)
             } else {
@@ -148,9 +153,9 @@ struct TabContentView: View {
                 case .home:
                     HomeView()
                 case .menu(let items):
-                    MenuPageView(items: items, memory: scrollMemory)
+                    MenuPageView(tabID: tab.id, items: items, memory: scrollMemory)
                 case .text(let text):
-                    TextPageView(text: text, memory: scrollMemory)
+                    TextPageView(tabID: tab.id, text: text, memory: scrollMemory)
                 case .image(let data):
                     ImagePageView(data: data, memory: scrollMemory)
                 case .error(let message):

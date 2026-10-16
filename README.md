@@ -43,6 +43,10 @@ directly — no Gatekeeper workarounds needed.
   `~/Library/Application Support/Warren/history.json`; History menu with
   recent pages, ⌘Y manager with search and per-item removal, and
   clear-by-age (past hour / 4 hours / day / all)
+- **Find on Page** — ⌘F opens a slim find bar that highlights matches as
+  you type; ⌘G / ⇧⌘G (or Return / ⇧Return) step through them. Options
+  for case matching, regular expressions, and searching all tabs in the
+  window
 - **Save as TXT / Markdown** — ⌘S / ⇧⌘S; menus become Markdown link lists,
   text pages are fenced to preserve formatting
 - **Text size** — ⌘+ / ⌘− / ⌘0 scale page content (chrome stays put);

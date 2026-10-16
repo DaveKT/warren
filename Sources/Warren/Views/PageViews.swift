@@ -9,44 +9,96 @@ enum ContentTextSize {
     static let step: Double = 1
 }
 
+/// Find on Page highlighting: matches get the same moss wash as the active
+/// tab, the current one the system find-indicator yellow.
+enum FindHighlight {
+    static let matchColor = Palette.mossWash
+    static let currentColor = Color(nsColor: .findHighlightColor)
+
+    static func line(_ line: String, ranges: [Range<String.Index>],
+                     current: Range<String.Index>?) -> AttributedString {
+        var result = AttributedString()
+        var cursor = line.startIndex
+        for range in ranges {
+            result += AttributedString(String(line[cursor..<range.lowerBound]))
+            var match = AttributedString(String(line[range]))
+            if range == current {
+                match.backgroundColor = currentColor
+                match.foregroundColor = .black // readable on yellow in dark mode
+            } else {
+                match.backgroundColor = matchColor
+            }
+            result += match
+            cursor = range.upperBound
+        }
+        result += AttributedString(String(line[cursor...]))
+        return result
+    }
+}
+
 /// Renders a Gopher menu (type 1 / 7 results). Monospaced throughout so
 /// the ASCII art that Gopherspace loves stays aligned.
 struct MenuPageView: View {
     @EnvironmentObject private var store: BrowserStore
+    @EnvironmentObject private var finder: PageFinder
+    let tabID: UUID
     let items: [GopherItem]
     var memory: ScrollMemory? = nil
 
     var body: some View {
-        ScrollView([.vertical]) {
-            // Plain VStack (not lazy) so the full content height exists
-            // immediately and Back/Forward scroll restoration can't be
-            // clamped by lazily estimated layout.
-            VStack(alignment: .leading, spacing: 0) {
-                ForEach(items) { item in
-                    MenuRow(item: item)
+        let lineHighlights = finder.highlights[tabID]
+        let current = finder.currentMatch.flatMap { $0.tabID == tabID ? $0 : nil }
+        ScrollViewReader { proxy in
+            ScrollView([.vertical]) {
+                // Plain VStack (not lazy) so the full content height exists
+                // immediately and Back/Forward scroll restoration can't be
+                // clamped by lazily estimated layout.
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                        MenuRow(item: item, highlighted: lineHighlights?[index].map {
+                            FindHighlight.line(item.display, ranges: $0,
+                                               current: current?.line == index ? current?.range : nil)
+                        })
+                    }
                 }
+                .padding(.vertical, 12)
+                .padding(.horizontal, 16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(memory)
             }
-            .padding(.vertical, 12)
-            .padding(.horizontal, 16)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(memory)
+            .background(Color(nsColor: .textBackgroundColor))
+            .onAppear { reveal(with: proxy) }
+            .onChange(of: finder.revealRequest) { reveal(with: proxy) }
         }
-        .background(Color(nsColor: .textBackgroundColor))
+    }
+
+    private func reveal(with proxy: ScrollViewProxy) {
+        guard let match = finder.takeReveal(for: tabID), items.indices.contains(match.line) else { return }
+        let rowID = items[match.line].id
+        // Let a freshly shown page lay out before scrolling it.
+        DispatchQueue.main.async { proxy.scrollTo(rowID, anchor: .center) }
     }
 }
 
 private struct MenuRow: View {
     @EnvironmentObject private var store: BrowserStore
     let item: GopherItem
+    /// The row's text with find matches marked, when it has any.
+    let highlighted: AttributedString?
     @State private var isHovering = false
     @AppStorage(ContentTextSize.storageKey) private var textSize = ContentTextSize.default
+
+    private var label: Text {
+        if let highlighted { return Text(highlighted) }
+        return Text(item.display.isEmpty ? " " : item.display)
+    }
 
     var body: some View {
         switch item.type {
         case .info:
             HStack(spacing: 8) {
                 Color.clear.frame(width: 16, height: 1)
-                Text(item.display.isEmpty ? " " : item.display)
+                label
                     .font(.system(size: textSize, design: .monospaced))
                     .textSelection(.enabled)
             }
@@ -56,7 +108,7 @@ private struct MenuRow: View {
                 Image(systemName: "exclamationmark.triangle")
                     .foregroundStyle(.red)
                     .frame(width: 16)
-                Text(item.display)
+                label
                     .font(.system(size: textSize, design: .monospaced))
                     .foregroundStyle(.red)
                     .textSelection(.enabled)
@@ -73,7 +125,7 @@ private struct MenuRow: View {
                 Image(systemName: item.type?.symbolName ?? "questionmark.square.dashed")
                     .foregroundStyle(isHovering ? Color.accentColor : Color.secondary)
                     .frame(width: 16)
-                Text(item.display)
+                label
                     .font(.system(size: textSize, design: .monospaced))
                     .foregroundStyle(Color.accentColor)
                     .underline(isHovering)
@@ -105,22 +157,98 @@ private struct MenuRow: View {
     }
 }
 
-/// Renders a type 0 text file.
+/// Renders a type 0 text file. The file stays one Text so a selection can
+/// span lines; find scrolls to a match via an invisible marker placed
+/// from the (monospaced) line height and character width.
 struct TextPageView: View {
+    @EnvironmentObject private var finder: PageFinder
+    let tabID: UUID
     let text: String
     var memory: ScrollMemory? = nil
     @AppStorage(ContentTextSize.storageKey) private var textSize = ContentTextSize.default
+    @State private var textHeight: CGFloat = 0
+
+    private static let matchMarkerID = "find-current-match"
 
     var body: some View {
-        ScrollView([.vertical, .horizontal]) {
-            Text(text)
-                .font(.system(size: textSize, design: .monospaced))
-                .textSelection(.enabled)
-                .padding(16)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(memory)
+        let lineHighlights = finder.highlights[tabID]
+        let current = finder.currentMatch.flatMap { $0.tabID == tabID ? $0 : nil }
+        ScrollViewReader { proxy in
+            ScrollView([.vertical, .horizontal]) {
+                content(lineHighlights, current: current)
+                    .font(.system(size: textSize, design: .monospaced))
+                    .textSelection(.enabled)
+                    .background(GeometryReader { geometry in
+                        Color.clear.preference(key: TextHeightKey.self, value: geometry.size.height)
+                    })
+                    .overlay(alignment: .topLeading) {
+                        if let current { matchMarker(for: current) }
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(memory)
+            }
+            .background(Color(nsColor: .textBackgroundColor))
+            .onPreferenceChange(TextHeightKey.self) { textHeight = $0 }
+            .onAppear { reveal(with: proxy) }
+            .onChange(of: finder.revealRequest) { reveal(with: proxy) }
+            // A new page can't place the marker until its text is measured.
+            .onChange(of: textHeight) { reveal(with: proxy) }
         }
-        .background(Color(nsColor: .textBackgroundColor))
+    }
+
+    private func content(_ lineHighlights: [Int: [Range<String.Index>]]?,
+                         current: FindMatch?) -> Text {
+        guard let lineHighlights else { return Text(text) }
+        // Plain runs between highlighted lines are appended as one chunk
+        // each, so long files don't become thousands of tiny appends.
+        var result = AttributedString()
+        var plain = ""
+        for (index, line) in TabContent.text(text).findableLines.enumerated() {
+            if index > 0 { plain += "\n" }
+            guard let ranges = lineHighlights[index] else {
+                plain += line
+                continue
+            }
+            result += AttributedString(plain)
+            plain = ""
+            result += FindHighlight.line(line, ranges: ranges,
+                                         current: current?.line == index ? current?.range : nil)
+        }
+        result += AttributedString(plain)
+        return Text(result)
+    }
+
+    @ViewBuilder
+    private func matchMarker(for match: FindMatch) -> some View {
+        let lineCount = text.utf8.reduce(1) { $1 == UInt8(ascii: "\n") ? $0 + 1 : $0 }
+        let lineHeight = textHeight / CGFloat(lineCount)
+        let lines = TabContent.text(text).findableLines
+        if lineHeight > 0, lines.indices.contains(match.line) {
+            let line = lines[match.line]
+            let font = NSFont.monospacedSystemFont(ofSize: textSize, weight: .regular)
+            let charWidth = ("0" as NSString).size(withAttributes: [.font: font]).width
+            let column = line.distance(from: line.startIndex, to: match.range.lowerBound)
+            let length = line.distance(from: match.range.lowerBound, to: match.range.upperBound)
+            Color.clear
+                .frame(width: max(charWidth * CGFloat(length), 1), height: lineHeight)
+                .id(Self.matchMarkerID)
+                .padding(.leading, charWidth * CGFloat(column))
+                .padding(.top, lineHeight * CGFloat(match.line))
+        }
+    }
+
+    private func reveal(with proxy: ScrollViewProxy) {
+        guard textHeight > 0, finder.takeReveal(for: tabID) != nil else { return }
+        // The marker moves in the same update; scroll once it's laid out.
+        DispatchQueue.main.async { proxy.scrollTo(Self.matchMarkerID, anchor: .center) }
+    }
+}
+
+private struct TextHeightKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }
 

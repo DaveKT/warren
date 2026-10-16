@@ -42,8 +42,10 @@ private struct BrowserWindow: View {
     var body: some View {
         ContentView()
             .environmentObject(store)
+            .environmentObject(store.finder)
             // Menu-bar commands act on the frontmost window's store.
             .focusedSceneObject(store)
+            .focusedSceneObject(store.finder)
             .onAppear { store.undoManager = undoManager }
             .onChange(of: undoManager) { store.undoManager = undoManager }
             // A link from another app opens in a new tab of this window.
@@ -57,10 +59,29 @@ private struct BrowserCommands: Commands {
     let history: HistoryStore
     let bookmarks: BookmarkStore
     @FocusedObject private var store: BrowserStore?
+    @FocusedObject private var finder: PageFinder?
 
     var body: some Commands {
         CommandGroup(replacing: .help) {
             OpenHelpButton()
+        }
+        // Replaces the text-system Find items, which only target editable
+        // text views and would claim ⌘F / ⌘G.
+        CommandGroup(replacing: .textEditing) {
+            Menu("Find") {
+                Button("Find…") { finder?.show() }
+                    .keyboardShortcut("f", modifiers: .command)
+                    .disabled(finder == nil)
+                Button("Find Next") { finder?.findNext() }
+                    .keyboardShortcut("g", modifiers: .command)
+                    .disabled((finder?.query ?? "").isEmpty)
+                Button("Find Previous") { finder?.findPrevious() }
+                    .keyboardShortcut("g", modifiers: [.command, .shift])
+                    .disabled((finder?.query ?? "").isEmpty)
+                Divider()
+                Button("Hide Find Bar") { finder?.hide() }
+                    .disabled(!(finder?.isVisible ?? false))
+            }
         }
         CommandGroup(after: .newItem) {
             NewTabButton(store: store)

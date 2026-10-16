@@ -2,11 +2,21 @@ import Combine
 import Foundation
 
 /// One occurrence of the find query: a range within one line of a tab's
-/// page (a menu row, or a line of a text file).
+/// page (a menu row, or a line of a text file). The range is in UTF-16
+/// offsets, valid only for the line text it was found in.
 struct FindMatch: Equatable {
     let tabID: UUID
     let line: Int
-    let range: Range<String.Index>
+    let range: NSRange
+}
+
+/// The matches on one line, with the exact text they were found in. A
+/// page can be drawn with newer content than the last search saw (a load
+/// lands before the re-search), so views check `text` before using
+/// `ranges`.
+struct LineHighlights {
+    let text: String
+    let ranges: [NSRange]
 }
 
 extension TabContent {
@@ -52,8 +62,8 @@ final class PageFinder: ObservableObject {
     /// Bumped when the search field should take keyboard focus.
     @Published private(set) var focusRequest = 0
 
-    /// Matches grouped for rendering: tab → line → ranges.
-    private(set) var highlights: [UUID: [Int: [Range<String.Index>]]] = [:]
+    /// Matches grouped for rendering: tab → line → highlights.
+    private(set) var highlights: [UUID: [Int: LineHighlights]] = [:]
 
     private weak var store: BrowserStore?
     private var contentWatch: AnyCancellable?
@@ -152,21 +162,25 @@ final class PageFinder: ObservableObject {
         let previous = currentMatch
         let tabs = searchesAllTabs ? store.tabs : store.tabs.filter { $0.id == store.selectedTabID }
         var found: [FindMatch] = []
-        var grouped: [UUID: [Int: [Range<String.Index>]]] = [:]
+        var grouped: [UUID: [Int: LineHighlights]] = [:]
         var limited = false
 
         search: for tab in tabs {
             for (lineIndex, line) in tab.content.findableLines.enumerated() {
                 let whole = NSRange(line.startIndex..., in: line)
-                for result in regex.matches(in: line, range: whole) {
-                    guard result.range.length > 0,
-                          let range = Range(result.range, in: line) else { continue }
+                var lineRanges: [NSRange] = []
+                defer {
+                    if !lineRanges.isEmpty {
+                        grouped[tab.id, default: [:]][lineIndex] = LineHighlights(text: line, ranges: lineRanges)
+                    }
+                }
+                for result in regex.matches(in: line, range: whole) where result.range.length > 0 {
                     if found.count == Self.maxMatches {
                         limited = true
                         break search
                     }
-                    found.append(FindMatch(tabID: tab.id, line: lineIndex, range: range))
-                    grouped[tab.id, default: [:]][lineIndex, default: []].append(range)
+                    found.append(FindMatch(tabID: tab.id, line: lineIndex, range: result.range))
+                    lineRanges.append(result.range)
                 }
             }
         }

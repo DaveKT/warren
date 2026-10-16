@@ -15,14 +15,18 @@ enum FindHighlight {
     static let matchColor = Palette.mossWash
     static let currentColor = Color(nsColor: .findHighlightColor)
 
-    static func line(_ line: String, ranges: [Range<String.Index>],
-                     current: Range<String.Index>?) -> AttributedString {
+    /// The line with its matches marked, or nil when the highlights were
+    /// found in different text (the page changed since the last search).
+    static func line(_ line: String, highlights: LineHighlights?,
+                     current: NSRange?) -> AttributedString? {
+        guard let highlights, highlights.text == line else { return nil }
         var result = AttributedString()
         var cursor = line.startIndex
-        for range in ranges {
+        for nsRange in highlights.ranges {
+            guard let range = Range(nsRange, in: line), range.lowerBound >= cursor else { continue }
             result += AttributedString(String(line[cursor..<range.lowerBound]))
             var match = AttributedString(String(line[range]))
-            if range == current {
+            if nsRange == current {
                 match.backgroundColor = currentColor
                 match.foregroundColor = .black // readable on yellow in dark mode
             } else {
@@ -55,10 +59,9 @@ struct MenuPageView: View {
                 // clamped by lazily estimated layout.
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                        MenuRow(item: item, highlighted: lineHighlights?[index].map {
-                            FindHighlight.line(item.display, ranges: $0,
-                                               current: current?.line == index ? current?.range : nil)
-                        })
+                        MenuRow(item: item, highlighted: FindHighlight.line(
+                            item.display, highlights: lineHighlights?[index],
+                            current: current?.line == index ? current?.range : nil))
                     }
                 }
                 .padding(.vertical, 12)
@@ -182,7 +185,7 @@ struct TextPageView: View {
                         Color.clear.preference(key: TextHeightKey.self, value: geometry.size.height)
                     })
                     .overlay(alignment: .topLeading) {
-                        if let current { matchMarker(for: current) }
+                        if let current { matchMarker(for: current, lineHighlights) }
                     }
                     .padding(16)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -197,7 +200,7 @@ struct TextPageView: View {
         }
     }
 
-    private func content(_ lineHighlights: [Int: [Range<String.Index>]]?,
+    private func content(_ lineHighlights: [Int: LineHighlights]?,
                          current: FindMatch?) -> Text {
         guard let lineHighlights else { return Text(text) }
         // Plain runs between highlighted lines are appended as one chunk
@@ -206,30 +209,34 @@ struct TextPageView: View {
         var plain = ""
         for (index, line) in TabContent.text(text).findableLines.enumerated() {
             if index > 0 { plain += "\n" }
-            guard let ranges = lineHighlights[index] else {
+            guard let highlighted = FindHighlight.line(
+                line, highlights: lineHighlights[index],
+                current: current?.line == index ? current?.range : nil) else {
                 plain += line
                 continue
             }
             result += AttributedString(plain)
             plain = ""
-            result += FindHighlight.line(line, ranges: ranges,
-                                         current: current?.line == index ? current?.range : nil)
+            result += highlighted
         }
         result += AttributedString(plain)
         return Text(result)
     }
 
     @ViewBuilder
-    private func matchMarker(for match: FindMatch) -> some View {
+    private func matchMarker(for match: FindMatch,
+                             _ lineHighlights: [Int: LineHighlights]?) -> some View {
         let lineCount = text.utf8.reduce(1) { $1 == UInt8(ascii: "\n") ? $0 + 1 : $0 }
         let lineHeight = textHeight / CGFloat(lineCount)
         let lines = TabContent.text(text).findableLines
-        if lineHeight > 0, lines.indices.contains(match.line) {
+        if lineHeight > 0, lines.indices.contains(match.line),
+           lineHighlights?[match.line]?.text == lines[match.line],
+           let range = Range(match.range, in: lines[match.line]) {
             let line = lines[match.line]
             let font = NSFont.monospacedSystemFont(ofSize: textSize, weight: .regular)
             let charWidth = ("0" as NSString).size(withAttributes: [.font: font]).width
-            let column = line.distance(from: line.startIndex, to: match.range.lowerBound)
-            let length = line.distance(from: match.range.lowerBound, to: match.range.upperBound)
+            let column = line.distance(from: line.startIndex, to: range.lowerBound)
+            let length = line.distance(from: range.lowerBound, to: range.upperBound)
             Color.clear
                 .frame(width: max(charWidth * CGFloat(length), 1), height: lineHeight)
                 .id(Self.matchMarkerID)

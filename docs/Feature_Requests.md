@@ -75,7 +75,7 @@ With the current version, the user must take action to update to the latest vers
 
 ## Command-Z Undo Close Tab ✅ DONE 2026-10-16
 
-~~Today, when a user closes a tab, there is no way to call that same tab and its state (history, etc). Being able to undo a closed tab would be very helpful.~~ ⌘Z (Edit → Undo Close Tab) reopens the most recently closed tab in its original position with its history, cached pages, and scroll positions; Redo (⇧⌘Z) closes it again. History → Reopen Closed Tab (⇧⌘T) does the same from the menu. Each window remembers its last 20 closed tabs for the current session only; blank tabs aren't remembered. While typing in the address bar, ⌘Z still undoes typing.
+~~Today, when a user closes a tab, there is no way to call that same tab and its state (history, etc). Being able to undo a closed tab would be very helpful.~~ ⌘Z (Edit → Undo Close Tab) reopens the most recently closed tab in its original position with its history and cached pages; Redo (⇧⌘Z) closes it again. History → Reopen Closed Tab (⇧⌘T) does the same from the menu. Each window remembers its last 20 closed tabs for the current session only; blank tabs aren't remembered. While typing in the address bar, ⌘Z still undoes typing.
 
 ## Restore Last Session
 

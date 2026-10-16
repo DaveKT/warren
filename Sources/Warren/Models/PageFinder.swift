@@ -26,7 +26,9 @@ extension TabContent {
         case .menu(let items):
             return items.map(\.display)
         case .text(let text):
-            return text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+            // Any newline grapheme, so a stray CRLF (raw CSO replies) counts
+            // as one line break, as it renders.
+            return text.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline).map(String.init)
         case .home, .image, .error:
             return []
         }
@@ -105,7 +107,11 @@ final class PageFinder: ObservableObject {
     func findPrevious() { step(by: -1) }
 
     private func step(by delta: Int) {
-        if !isVisible { show() }
+        if !isVisible {
+            // Showing the bar already lands on the first match.
+            show()
+            return
+        }
         guard !matches.isEmpty else { return }
         if let currentIndex {
             self.currentIndex = (currentIndex + delta + matches.count) % matches.count

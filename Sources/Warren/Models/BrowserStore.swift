@@ -49,11 +49,16 @@ final class BrowserStore: ObservableObject {
         }
     }
 
-    /// Closed tabs whose undo actions must be dropped once the current
-    /// undo group closes; removing them while a group is open leaves
-    /// dead steps on the undo stack.
-    private var pendingUndoRemovals: [ClosedTab] = []
+    /// Undo targets (closed-tab entries and their tabs) whose actions must
+    /// be dropped once the current undo group closes; removing them while
+    /// a group is open leaves dead steps on the undo stack. Held strongly
+    /// until then, since UndoManager doesn't retain targets.
+    private var pendingUndoRemovals: [AnyObject] = []
     private var undoGroupObserver: NSObjectProtocol?
+
+    deinit {
+        if let undoGroupObserver { NotificationCenter.default.removeObserver(undoGroupObserver) }
+    }
 
     /// Global visit history; injected so it stays app-owned and shared
     /// across windows.
@@ -110,7 +115,10 @@ final class BrowserStore: ObservableObject {
     private func rememberClosedTab(_ entry: ClosedTab) {
         closedTabs.append(entry)
         if closedTabs.count > Self.maxClosedTabs {
-            removeUndoActions(for: closedTabs.removeFirst())
+            // The tab is about to be deallocated; any "close it again"
+            // action from an earlier reopen must go with it.
+            let old = closedTabs.removeFirst()
+            removeUndoActions(for: old, old.tab)
         }
         undoManager?.registerUndo(withTarget: entry) { [weak self] entry in
             MainActor.assumeIsolated { self?.reopen(entry) }
@@ -137,12 +145,12 @@ final class BrowserStore: ObservableObject {
         undoManager?.setActionName("Close Tab")
     }
 
-    private func removeUndoActions(for entry: ClosedTab) {
+    private func removeUndoActions(for targets: AnyObject...) {
         guard let undoManager else { return }
         if undoManager.groupingLevel == 0 {
-            undoManager.removeAllActions(withTarget: entry)
+            for target in targets { undoManager.removeAllActions(withTarget: target) }
         } else {
-            pendingUndoRemovals.append(entry)
+            pendingUndoRemovals.append(contentsOf: targets)
         }
     }
 
@@ -162,7 +170,7 @@ final class BrowserStore: ObservableObject {
         guard let undoManager, undoManager.groupingLevel == 0, !pendingUndoRemovals.isEmpty else { return }
         let entries = pendingUndoRemovals
         pendingUndoRemovals.removeAll()
-        for entry in entries { undoManager.removeAllActions(withTarget: entry) }
+        for target in entries { undoManager.removeAllActions(withTarget: target) }
     }
 
     func selectTab(_ tab: BrowserTab) {

@@ -26,6 +26,7 @@ struct FindBar: View {
         .background(.bar)
         .onAppear { focusField() }
         .onChange(of: finder.focusRequest) { focusField() }
+        .onChange(of: fieldFocused) { if fieldFocused { selectAllInField() } }
     }
 
     private var controls: some View {
@@ -106,11 +107,23 @@ struct FindBar: View {
     }
 
     /// Focuses the field and selects its text, so ⌘F then typing replaces
-    /// the previous query.
+    /// the previous query. Selection happens once focus has actually
+    /// landed (see onChange(of: fieldFocused)), not before.
     private func focusField() {
-        fieldFocused = true
+        if fieldFocused {
+            selectAllInField()
+        } else {
+            fieldFocused = true
+        }
+    }
+
+    private func selectAllInField() {
         DispatchQueue.main.async {
-            NSApp.sendAction(#selector(NSText.selectAll(_:)), to: nil, from: nil)
+            // Only the find field's editor, never another field that
+            // happens to hold focus.
+            guard let editor = NSApp.keyWindow?.firstResponder as? NSTextView,
+                  editor.string == finder.query else { return }
+            editor.selectAll(nil)
         }
     }
 }

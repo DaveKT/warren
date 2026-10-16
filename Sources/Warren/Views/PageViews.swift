@@ -200,35 +200,48 @@ struct TextPageView: View {
         }
     }
 
+    /// SwiftUI's Text slows sharply with thousands of attributed runs (a
+    /// single-letter search on a long file can stall the UI for seconds),
+    /// so past this many matches only the lines around the current match
+    /// are highlighted; the count and ⌘G navigation still cover them all.
+    private static let fullHighlightLimit = 500
+    private static let highlightWindow = 100
+
     private func content(_ lineHighlights: [Int: LineHighlights]?,
                          current: FindMatch?) -> Text {
         guard let lineHighlights else { return Text(text) }
-        // Plain runs between highlighted lines are appended as one chunk
-        // each, so long files don't become thousands of tiny appends.
-        var result = AttributedString()
+        let matchCount = lineHighlights.values.reduce(0) { $0 + $1.ranges.count }
+        let window: ClosedRange<Int>? = matchCount > Self.fullHighlightLimit
+            ? (current?.line ?? 0).advanced(by: -Self.highlightWindow)...(current?.line ?? 0).advanced(by: Self.highlightWindow)
+            : nil
+        // Plain stretches stay String-backed Text (SwiftUI renders a whole
+        // page as one AttributedString an order of magnitude slower, even
+        // with few runs); only highlighted lines are spliced in attributed.
+        var result = Text("")
         var plain = ""
         for (index, line) in TabContent.text(text).findableLines.enumerated() {
             if index > 0 { plain += "\n" }
+            if let window, !window.contains(index) {
+                plain += line
+                continue
+            }
             guard let highlighted = FindHighlight.line(
                 line, highlights: lineHighlights[index],
                 current: current?.line == index ? current?.range : nil) else {
                 plain += line
                 continue
             }
-            result += AttributedString(plain)
+            result = result + Text(plain) + Text(highlighted)
             plain = ""
-            result += highlighted
         }
-        result += AttributedString(plain)
-        return Text(result)
+        return result + Text(plain)
     }
 
     @ViewBuilder
     private func matchMarker(for match: FindMatch,
                              _ lineHighlights: [Int: LineHighlights]?) -> some View {
-        let lineCount = text.utf8.reduce(1) { $1 == UInt8(ascii: "\n") ? $0 + 1 : $0 }
-        let lineHeight = textHeight / CGFloat(lineCount)
         let lines = TabContent.text(text).findableLines
+        let lineHeight = textHeight / CGFloat(lines.count)
         if lineHeight > 0, lines.indices.contains(match.line),
            lineHighlights?[match.line]?.text == lines[match.line],
            let range = Range(match.range, in: lines[match.line]) {

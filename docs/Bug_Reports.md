@@ -22,3 +22,7 @@ page titles are dropped, and `* ` info lines become real markdown bullets.
 ## Toolbar Buttons Drift Next to the URL Field on macOS 27 ✅ RESOLVED 2026-10-16
 
 ~~On macOS 27, the bookmark / bookmarks-menu / export button group sits immediately after the URL field instead of at the trailing edge of the toolbar, leaving an empty gap on the right.~~ Fixed: macOS 27 no longer pushes primary-action toolbar items to the trailing edge on its own; a flexible toolbar spacer (macOS 26+) now does, restoring the original layout. The toolbar code hadn't changed — this came with the OS update.
+
+## Very Large Text Files Render Blank
+
+Text files beyond roughly 10,000 lines (e.g. the 653 KB `gopher://gopher.quux.org/0/Archives/mirrors/wiretap.area.com/Gov/npr.txt`) fetch successfully and the tab title updates, but the page area stays blank: a text page is one SwiftUI `Text`, and a single text layer that tall silently fails to draw. Files of a few thousand lines (a 169 KB act of Congress) render fine. Predates 1.4b. The same single-`Text` design is why Find highlights on long pages are expensive — SwiftUI `Text` slows sharply with thousands of attributed runs, which is why 1.4b highlights only the lines around the current match once a page has more than 500 matches. The fix for both is a TextKit-backed (`NSTextView`) text page, which handles arbitrary length and attributed ranges cheaply.

@@ -26,3 +26,15 @@ page titles are dropped, and `* ` info lines become real markdown bullets.
 ## Very Large Text Files Render Blank
 
 Text files beyond roughly 10,000 lines (e.g. the 653 KB `gopher://gopher.quux.org/0/Archives/mirrors/wiretap.area.com/Gov/npr.txt`) fetch successfully and the tab title updates, but the page area stays blank: a text page is one SwiftUI `Text`, and a single text layer that tall silently fails to draw. Files of a few thousand lines (a 169 KB act of Congress) render fine. Predates 1.4b. The same single-`Text` design is why Find highlights on long pages are expensive — SwiftUI `Text` slows sharply with thousands of attributed runs, which is why 1.4b highlights only the lines around the current match once a page has more than 500 matches. The fix for both is a TextKit-backed (`NSTextView`) text page, which handles arbitrary length and attributed ranges cheaply.
+
+## Text Selection Can't Span Lines on Menu Pages
+
+On Gopher menu pages (type 1, which includes most phlog posts and server front pages), selecting text only works within a single line. Dragging from one line into the next keeps the selection on the line where the drag started, so multi-line passages can't be selected and copied. Expected: start a selection anywhere and end it anywhere on the page, as in a web browser or text editor, then copy it with ⌘C.
+
+Example: `gopher://sava.rocks/1/blog/my-ps3-died-its-controllers-have-a-new-purpose/` — a blog post served as a menu of 52 info lines (the article text) and 4 links. Start a drag partway through "uncommon problems with aging PS3 consoles. Wireless connectivity" in the first paragraph and drag down into the lines below: the highlight runs from the starting point to the end of that one line and stops there; none of the following lines in the paragraph get selected, however far the drag goes.
+
+Cause: a menu page draws each line as its own view. Info lines are separate SwiftUI `Text` views, each with its own `.textSelection(.enabled)`, and link lines are buttons with no selection at all. SwiftUI's text selection can't cross between separate `Text` views. Text-file pages (type 0) draw the whole file as one `Text`, so they aren't affected. Present since 1.0b.
+
+Workaround: Save as Text (⌘S) or Save as Markdown (⇧⌘S) exports the whole page, which can then be copied from the saved file.
+
+Possible fix: render a menu page as one TextKit-backed text view (`NSTextView`), with link lines as clickable link attributes rather than buttons, so a single selection can run across info and link lines alike. This is the same move recommended for "Very Large Text Files Render Blank" above, so the two could be fixed together.

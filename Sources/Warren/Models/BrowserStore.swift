@@ -10,6 +10,7 @@ struct SearchPrompt: Identifiable {
     var itemTitle: String
 }
 
+/// The tabs and navigation state of one browser window.
 @MainActor
 final class BrowserStore: ObservableObject {
     @Published var tabs: [BrowserTab] = []
@@ -20,7 +21,8 @@ final class BrowserStore: ObservableObject {
     @Published var showHistoryManager = false
     @Published var showAddBookmark = false
 
-    /// Global visit history; injected so both stores stay app-owned.
+    /// Global visit history; injected so it stays app-owned and shared
+    /// across windows.
     let historyStore: HistoryStore?
 
     init(history: HistoryStore? = nil) {
@@ -94,13 +96,16 @@ final class BrowserStore: ObservableObject {
     }
 
     /// Entry point for gopher:// URLs handed to us by macOS — links
-    /// clicked in Safari, PDFs, or other apps. Opens in a new tab.
+    /// clicked in Safari, PDFs, or other apps. Opens in a new tab, unless
+    /// the current tab is still blank (e.g. a window macOS just created
+    /// to receive the link).
     func openExternal(_ url: URL) {
         guard let address = GopherAddress.parse(url.absoluteString) else {
             statusMessage = "Not a valid Gopher address: \(url.absoluteString)"
             return
         }
-        open(address, inNewTab: true)
+        let reuseBlankTab = selectedTab?.history.isEmpty ?? false
+        open(address, inNewTab: !reuseBlankTab)
     }
 
     /// Entry point for clicking a menu item.

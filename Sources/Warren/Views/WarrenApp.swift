@@ -2,103 +2,22 @@ import SwiftUI
 
 @main
 struct WarrenApp: App {
-    @StateObject private var store: BrowserStore
     @StateObject private var bookmarks = BookmarkStore()
-    @StateObject private var history: HistoryStore
-
-    init() {
-        let history = HistoryStore()
-        _history = StateObject(wrappedValue: history)
-        _store = StateObject(wrappedValue: BrowserStore(history: history))
-    }
+    @StateObject private var history = HistoryStore()
 
     var body: some Scene {
-        WindowGroup {
-            ContentView()
-                .environmentObject(store)
+        WindowGroup(id: BrowserWindow.sceneID) {
+            BrowserWindow(history: history)
                 .environmentObject(bookmarks)
                 .environmentObject(history)
                 .frame(minWidth: 700, minHeight: 450)
                 // gopher:// links from other apps: any existing window may
-                // claim the event (so no new window is spawned)…
+                // claim the event (so no new window is spawned).
                 .handlesExternalEvents(preferring: [], allowing: ["*"])
-                // …and the link opens in a new tab of that window.
-                .onOpenURL { store.openExternal($0) }
         }
         .defaultSize(width: 1000, height: 720)
         .commands {
-            CommandGroup(replacing: .help) {
-                OpenHelpButton()
-            }
-            CommandGroup(after: .newItem) {
-                Button("New Tab") { store.newTab() }
-                    .keyboardShortcut("t", modifiers: .command)
-                Button("Close Tab") { store.closeSelectedTab() }
-                    .keyboardShortcut("w", modifiers: .command)
-            }
-            CommandGroup(replacing: .saveItem) {
-                Button("Save as Text…") {
-                    if let tab = store.selectedTab { PageExporter.export(tab: tab, format: .plainText) }
-                }
-                .keyboardShortcut("s", modifiers: .command)
-                .disabled(!canExportCurrent)
-
-                Button("Save as Markdown…") {
-                    if let tab = store.selectedTab { PageExporter.export(tab: tab, format: .markdown) }
-                }
-                .keyboardShortcut("s", modifiers: [.command, .shift])
-                .disabled(!canExportCurrent)
-            }
-            CommandGroup(after: .toolbar) {
-                Divider()
-                TextSizeCommands()
-            }
-            CommandMenu("Go") {
-                Button("Back") { store.goBack() }
-                    .keyboardShortcut("[", modifiers: .command)
-                    .disabled(!(store.selectedTab?.canGoBack ?? false))
-                Button("Forward") { store.goForward() }
-                    .keyboardShortcut("]", modifiers: .command)
-                    .disabled(!(store.selectedTab?.canGoForward ?? false))
-                Button("Reload Page") { store.reload() }
-                    .keyboardShortcut("r", modifiers: .command)
-                    .disabled(store.selectedTab?.currentAddress == nil)
-                Divider()
-                Button("Home") { store.goHome() }
-                    .keyboardShortcut("h", modifiers: [.command, .shift])
-                Divider()
-                Button("Show Next Tab") { store.selectNextTab() }
-                    .keyboardShortcut(.tab, modifiers: .control)
-                    .disabled(store.tabs.count < 2)
-                Button("Show Previous Tab") { store.selectPreviousTab() }
-                    .keyboardShortcut(.tab, modifiers: [.control, .shift])
-                    .disabled(store.tabs.count < 2)
-            }
-            CommandMenu("History") {
-                Button("Show All History…") { store.showHistoryManager = true }
-                    .keyboardShortcut("y", modifiers: .command)
-                Divider()
-                ForEach(history.items.prefix(15)) { item in
-                    Button(item.title) {
-                        if let address = item.address { store.open(address, title: item.title) }
-                    }
-                }
-                if !history.items.isEmpty { Divider() }
-                Menu("Clear History") {
-                    ForEach(HistoryStore.ClearRange.allCases, id: \.self) { range in
-                        Button(range.label) { history.confirmAndClear(range) }
-                    }
-                }
-                .disabled(history.items.isEmpty)
-            }
-            CommandMenu("Bookmarks") {
-                Button("Add Bookmark…") { store.showAddBookmark = true }
-                    .keyboardShortcut("d", modifiers: .command)
-                    .disabled(store.selectedTab?.currentAddress == nil)
-                Divider()
-                BookmarkMenuItems(nodes: bookmarks.root)
-                    .environmentObject(store)
-            }
+            BrowserCommands(history: history, bookmarks: bookmarks)
         }
 
         Window("Warren Help", id: "help") {
@@ -106,10 +25,137 @@ struct WarrenApp: App {
         }
         .defaultSize(width: 660, height: 580)
     }
+}
+
+/// One browser window. Each window owns its own tabs; history and
+/// bookmarks are app-wide.
+private struct BrowserWindow: View {
+    static let sceneID = "browser"
+
+    @StateObject private var store: BrowserStore
+
+    init(history: HistoryStore) {
+        _store = StateObject(wrappedValue: BrowserStore(history: history))
+    }
+
+    var body: some View {
+        ContentView()
+            .environmentObject(store)
+            // Menu-bar commands act on the frontmost window's store.
+            .focusedSceneObject(store)
+            // A link from another app opens in a new tab of this window.
+            .onOpenURL { store.openExternal($0) }
+    }
+}
+
+/// Menu-bar commands. Tab and page commands target the focused window's
+/// store and are disabled when no browser window is open.
+private struct BrowserCommands: Commands {
+    let history: HistoryStore
+    let bookmarks: BookmarkStore
+    @FocusedObject private var store: BrowserStore?
+
+    var body: some Commands {
+        CommandGroup(replacing: .help) {
+            OpenHelpButton()
+        }
+        CommandGroup(after: .newItem) {
+            NewTabButton(store: store)
+            Button("Close Tab") { store?.closeSelectedTab() }
+                .keyboardShortcut("w", modifiers: .command)
+                .disabled(store == nil)
+        }
+        CommandGroup(replacing: .saveItem) {
+            Button("Save as Text…") {
+                if let tab = store?.selectedTab { PageExporter.export(tab: tab, format: .plainText) }
+            }
+            .keyboardShortcut("s", modifiers: .command)
+            .disabled(!canExportCurrent)
+
+            Button("Save as Markdown…") {
+                if let tab = store?.selectedTab { PageExporter.export(tab: tab, format: .markdown) }
+            }
+            .keyboardShortcut("s", modifiers: [.command, .shift])
+            .disabled(!canExportCurrent)
+        }
+        CommandGroup(after: .toolbar) {
+            Divider()
+            TextSizeCommands()
+        }
+        CommandMenu("Go") {
+            Button("Back") { store?.goBack() }
+                .keyboardShortcut("[", modifiers: .command)
+                .disabled(!(store?.selectedTab?.canGoBack ?? false))
+            Button("Forward") { store?.goForward() }
+                .keyboardShortcut("]", modifiers: .command)
+                .disabled(!(store?.selectedTab?.canGoForward ?? false))
+            Button("Reload Page") { store?.reload() }
+                .keyboardShortcut("r", modifiers: .command)
+                .disabled(store?.selectedTab?.currentAddress == nil)
+            Divider()
+            Button("Home") { store?.goHome() }
+                .keyboardShortcut("h", modifiers: [.command, .shift])
+                .disabled(store == nil)
+            Divider()
+            Button("Show Next Tab") { store?.selectNextTab() }
+                .keyboardShortcut(.tab, modifiers: .control)
+                .disabled((store?.tabs.count ?? 0) < 2)
+            Button("Show Previous Tab") { store?.selectPreviousTab() }
+                .keyboardShortcut(.tab, modifiers: [.control, .shift])
+                .disabled((store?.tabs.count ?? 0) < 2)
+        }
+        CommandMenu("History") {
+            Button("Show All History…") { store?.showHistoryManager = true }
+                .keyboardShortcut("y", modifiers: .command)
+                .disabled(store == nil)
+            Divider()
+            ForEach(history.items.prefix(15)) { item in
+                Button(item.title) {
+                    if let address = item.address { store?.open(address, title: item.title) }
+                }
+                .disabled(store == nil)
+            }
+            if !history.items.isEmpty { Divider() }
+            Menu("Clear History") {
+                ForEach(HistoryStore.ClearRange.allCases, id: \.self) { range in
+                    Button(range.label) { history.confirmAndClear(range) }
+                }
+            }
+            .disabled(history.items.isEmpty)
+        }
+        CommandMenu("Bookmarks") {
+            Button("Add Bookmark…") { store?.showAddBookmark = true }
+                .keyboardShortcut("d", modifiers: .command)
+                .disabled(store?.selectedTab?.currentAddress == nil)
+            Divider()
+            if let store {
+                BookmarkMenuItems(nodes: bookmarks.root)
+                    .environmentObject(store)
+            }
+        }
+    }
 
     private var canExportCurrent: Bool {
-        guard let tab = store.selectedTab else { return false }
+        guard let tab = store?.selectedTab else { return false }
         return PageExporter.canExport(tab.content)
+    }
+}
+
+/// New Tab (⌘T) opens a tab in the focused window, or a fresh window
+/// when none is open.
+private struct NewTabButton: View {
+    let store: BrowserStore?
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Button("New Tab") {
+            if let store {
+                store.newTab()
+            } else {
+                openWindow(id: BrowserWindow.sceneID)
+            }
+        }
+        .keyboardShortcut("t", modifiers: .command)
     }
 }
 

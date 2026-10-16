@@ -22,8 +22,8 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
     <key>CFBundleIdentifier</key>      <string>app.warren1436.Warren</string>
     <key>CFBundleExecutable</key>      <string>Warren</string>
     <key>CFBundlePackageType</key>     <string>APPL</string>
-    <key>CFBundleShortVersionString</key> <string>1.3b</string>
-    <key>CFBundleVersion</key>         <string>5</string>
+    <key>CFBundleShortVersionString</key> <string>1.4b</string>
+    <key>CFBundleVersion</key>         <string>6</string>
     <key>CFBundleIconFile</key>        <string>AppIcon</string>
     <key>LSMinimumSystemVersion</key>  <string>14.0</string>
     <key>LSApplicationCategoryType</key> <string>public.app-category.utilities</string>

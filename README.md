@@ -34,7 +34,10 @@ directly — no Gatekeeper workarounds needed.
   current session. Each window keeps its own tabs; ⌘-click a link to
   open it in a new tab
 - **Select and copy** — select any span of page text, across lines and
-  links, and copy it as plain text with ⌘C
+  links, and copy it as plain text with ⌘C. On menus, paragraphs the
+  server sent as hard-wrapped lines are rejoined (ASCII art, lists, and
+  links keep their line breaks); right-click → Copy as Shown copies the
+  lines exactly
 - **Back / Forward / Reload** — ⌘[ , ⌘] , ⌘R, with instant cached history
 - **Bookmarks** — ⌘D opens an add sheet with title and folder choice;
   nestable folders appear as submenus in the toolbar and menu bar and as

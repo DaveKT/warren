@@ -386,6 +386,8 @@ final class PageNSTextView: NSTextView {
     var onHoverLine: ((Int?) -> Void)?
     var menuForLine: ((Int) -> NSMenu?)?
     private(set) var hoveredLine: Int?
+    /// Set while Copy as Shown runs, to copy the lines exactly as drawn.
+    private var copiesAsShown = false
 
     private var document: PageDocument?
     private var symbols: [GutterSymbol?] = []
@@ -400,6 +402,25 @@ final class PageNSTextView: NSTextView {
     /// type, which other apps still read as plain text.
     override var writablePasteboardTypes: [NSPasteboard.PasteboardType] {
         super.writablePasteboardTypes.filter { $0 == .string || $0.rawValue == "NSStringPboardType" }
+    }
+
+    /// On menus, copies paragraphs rather than the hard-wrapped lines
+    /// they're sent as (see PageDocument.copyText). Used by Copy, drags,
+    /// and Services alike.
+    override func writeSelection(to pboard: NSPasteboard, types: [NSPasteboard.PasteboardType]) -> Bool {
+        guard let document, !document.items.isEmpty, !copiesAsShown else {
+            return super.writeSelection(to: pboard, types: types)
+        }
+        let ranges = selectedRanges.map(\.rangeValue).filter { $0.length > 0 }
+        guard !ranges.isEmpty else { return false }
+        pboard.declareTypes([.string], owner: nil)
+        return pboard.setString(ranges.map(document.copyText(for:)).joined(separator: "\n"), forType: .string)
+    }
+
+    @objc func copyAsShown(_ sender: Any?) {
+        copiesAsShown = true
+        defer { copiesAsShown = false }
+        copy(sender)
     }
 
     func configureGutter(document: PageDocument, textSize: Double, symbols: [GutterSymbol?]) {
@@ -509,12 +530,23 @@ final class PageNSTextView: NSTextView {
 
     override func menu(for event: NSEvent) -> NSMenu? {
         let point = convert(event.locationInWindow, from: nil)
+        let reflows = !(document?.items.isEmpty ?? true)
         guard let line = linkLine(at: point), let menu = menuForLine?(line) else {
-            return super.menu(for: event)
+            let menu = super.menu(for: event)
+            // Offer the raw lines next to Copy, which joins paragraphs.
+            if reflows, selectedRange().length > 0, let menu,
+               let copyIndex = menu.items.firstIndex(where: { $0.action == #selector(copy(_:)) }) {
+                menu.insertItem(withTitle: "Copy as Shown", action: #selector(copyAsShown(_:)),
+                                keyEquivalent: "", at: copyIndex + 1)
+            }
+            return menu
         }
         if selectedRange().length > 0 {
             menu.addItem(.separator())
             menu.addItem(withTitle: "Copy", action: #selector(copy(_:)), keyEquivalent: "")
+            if reflows {
+                menu.addItem(withTitle: "Copy as Shown", action: #selector(copyAsShown(_:)), keyEquivalent: "")
+            }
         }
         return menu
     }

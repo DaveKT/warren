@@ -37,7 +37,9 @@ struct HelpView: View {
                     a link to see its type and address at the bottom of the \
                     window. Open links in a new tab with ⌘-click or from their \
                     right-click menu. Select any text on a page — across as many \
-                    lines as you like — and copy it with ⌘C. Manage tabs \
+                    lines as you like — and copy it with ⌘C. On menus, Copy \
+                    rejoins paragraphs that the server sent as short lines; \
+                    Copy as Shown (right-click) keeps every line break. Manage tabs \
                     with ⌘T and ⌘W. Closed a tab by mistake? ⌘Z (or ⇧⌘T) brings \
                     it back with its history — up to the last 20 closed tabs in \
                     each window. Each window (⌘N) keeps its own set of tabs.

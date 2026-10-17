@@ -31,6 +31,9 @@ final class BrowserStore: ObservableObject {
     @Published var addressBarText = ""
     @Published var searchPrompt: SearchPrompt?
     @Published var statusMessage = ""
+    /// The menu link under the pointer ("Menu · gopher://…"), shown in a
+    /// small overlay at the bottom of the page.
+    @Published var linkHoverStatus: String?
     @Published var showHistoryManager = false
     @Published var showAddBookmark = false
 

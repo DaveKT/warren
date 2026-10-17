@@ -31,7 +31,10 @@ directly — no Gatekeeper workarounds needed.
 - **Tabs** — ⌘T new tab, ⌘W close tab, per-tab history; drag tabs to
   reorder them, ⌃⇥ / ⌃⇧⇥ cycle through tabs. ⌘Z (or ⇧⌘T) reopens a
   closed tab with its history intact — the last 20 per window, for the
-  current session. Each window keeps its own tabs
+  current session. Each window keeps its own tabs; ⌘-click a link to
+  open it in a new tab
+- **Select and copy** — select any span of page text, across lines and
+  links, and copy it as plain text with ⌘C
 - **Back / Forward / Reload** — ⌘[ , ⌘] , ⌘R, with instant cached history
 - **Bookmarks** — ⌘D opens an add sheet with title and folder choice;
   nestable folders appear as submenus in the toolbar and menu bar and as

@@ -16,6 +16,20 @@ struct ContentView: View {
             }
             if let tab = store.selectedTab {
                 TabContentView(tab: tab)
+                    .overlay(alignment: .bottomLeading) {
+                        if let status = store.linkHoverStatus {
+                            Text(status)
+                                .font(.caption)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 3)
+                                .background(Color(nsColor: .windowBackgroundColor), in: RoundedRectangle(cornerRadius: 5))
+                                .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(Color(nsColor: .separatorColor)))
+                                .padding(6)
+                                .allowsHitTesting(false)
+                        }
+                    }
             } else {
                 HomeView()
             }
@@ -152,9 +166,7 @@ struct TabContentView: View {
                 switch tab.content {
                 case .home:
                     HomeView()
-                case .menu(let items):
-                    MenuPageView(tabID: tab.id, items: items, memory: scrollMemory)
-                case .text:
+                case .menu, .text:
                     PageTextView(tab: tab, content: tab.content)
                 case .image(let data):
                     ImagePageView(data: data, memory: scrollMemory)

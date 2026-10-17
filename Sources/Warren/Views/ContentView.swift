@@ -154,8 +154,8 @@ struct TabContentView: View {
                     HomeView()
                 case .menu(let items):
                     MenuPageView(tabID: tab.id, items: items, memory: scrollMemory)
-                case .text(let text):
-                    TextPageView(tabID: tab.id, text: text, memory: scrollMemory)
+                case .text:
+                    PageTextView(tab: tab, content: tab.content)
                 case .image(let data):
                     ImagePageView(data: data, memory: scrollMemory)
                 case .error(let message):

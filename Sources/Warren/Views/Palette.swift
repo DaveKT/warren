@@ -9,8 +9,9 @@ enum Palette {
 
     /// A subtle moss fill for the active tab and find matches. Dark mode
     /// needs a little more of it to read against the darker background.
-    static let mossWash = Color(nsColor: NSColor(name: nil) { appearance in
+    static let mossWashColor = NSColor(name: nil) { appearance in
         let isDark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
         return moss.withAlphaComponent(isDark ? 0.32 : 0.22)
-    })
+    }
+    static let mossWash = Color(nsColor: mossWashColor)
 }

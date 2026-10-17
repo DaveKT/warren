@@ -65,7 +65,12 @@ final class PageFinder: ObservableObject {
     @Published private(set) var focusRequest = 0
 
     /// Matches grouped for rendering: tab → line → highlights.
-    private(set) var highlights: [UUID: [Int: LineHighlights]] = [:]
+    private(set) var highlights: [UUID: [Int: LineHighlights]] = [:] {
+        didSet { highlightsVersion += 1 }
+    }
+    /// Changes whenever `highlights` does, so views can skip re-applying
+    /// identical highlights.
+    private(set) var highlightsVersion = 0
 
     private weak var store: BrowserStore?
     private var contentWatch: AnyCancellable?

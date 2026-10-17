@@ -40,3 +40,11 @@ page titles are dropped, and `* ` info lines become real markdown bullets.
 ~~Possible fix: render a menu page as one TextKit-backed text view (`NSTextView`), with link lines as clickable link attributes rather than buttons, so a single selection can run across info and link lines alike. This is the same move recommended for "Very Large Text Files Render Blank" above, so the two could be fixed together.~~
 
 Fixed: menu pages now render in the same AppKit text view as text files (`PageTextView`), as one document. Links are clickable link attributes (⌘-click opens menus and text files in a new tab), item-type icons are drawn in a margin outside the text so they're never selected or copied, and hovering a link shows its type and address at the bottom of the window. On the example page, selecting from "with aging PS3 consoles" through "damaged connections," and copying yields exactly those three lines as plain text.
+
+## Text Size Change Drops the Selection (minor)
+
+Changing the text size (⌘+ / ⌘− / ⌘0) rebuilds the page text in `PageTextView`, which discards any current selection and can shift the scroll position slightly. Cause: the view replaces the whole attributed string to change the font. Changing only the font attribute in place would keep both the selection and the position. Low impact — the old SwiftUI page behaved about the same.
+
+## Link Hover Label Can Go Stale (minor)
+
+The hover label at the bottom of the window (e.g. "Menu · gopher://…") lags in two cases: after reloading with ⌘R while the pointer rests on a link, the label stays until the pointer moves; and while scrolling with the wheel under a stationary pointer, the underline and label don't follow the link that moves under the pointer until the mouse moves. Cause: the reload resets the hover state without clearing the label, and AppKit sends no mouse-moved events during scrolling. Both clear on the next pointer movement. Fix: clear the label when the page content changes, and re-check the pointer position after scrolls.

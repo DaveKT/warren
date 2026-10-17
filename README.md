@@ -32,7 +32,8 @@ directly — no Gatekeeper workarounds needed.
   reorder them, ⌃⇥ / ⌃⇧⇥ cycle through tabs. ⌘Z (or ⇧⌘T) reopens a
   closed tab with its history intact — the last 20 per window, for the
   current session. Each window keeps its own tabs; ⌘-click a link to
-  open it in a new tab
+  open it in a new tab. Hovering a link shows its type and address at
+  the bottom of the window
 - **Select and copy** — select any span of page text, across lines and
   links, and copy it as plain text with ⌘C. On menus, paragraphs the
   server sent as hard-wrapped lines are rejoined (ASCII art, lists, and
@@ -52,7 +53,7 @@ directly — no Gatekeeper workarounds needed.
 - **Find on Page** — ⌘F opens a slim find bar that highlights matches as
   you type; ⌘G / ⇧⌘G (or Return / ⇧Return) step through them. Options
   for case matching, regular expressions, and searching all tabs in the
-  window
+  window. In dark mode, matches use a solid, high-contrast highlight
 - **Save as TXT / Markdown** — ⌘S / ⇧⌘S; menus become Markdown link lists,
   text pages are fenced to preserve formatting
 - **Text size** — ⌘+ / ⌘− / ⌘0 scale page content (chrome stays put);
@@ -85,7 +86,9 @@ swift build && ./.build/debug/Warren
   menu parser (RFC 1436 §3.8), tab/history state, bookmark store
 - `Sources/Warren/Networking` — one-shot TCP transaction client
   (Network.framework)
-- `Sources/Warren/Views` — SwiftUI interface
+- `Sources/Warren/Views` — SwiftUI interface; menu and text pages draw
+  in an AppKit text view (`PageTextView`) so selection spans the whole
+  page and very long files render
 - `Sources/Warren/Export` — TXT/Markdown page export
 - `Scripts` — app-bundle assembly and release DMG packaging
 - `Resources` — the app icon (`AppIcon.icns`)

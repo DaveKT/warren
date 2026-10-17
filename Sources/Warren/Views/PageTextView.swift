@@ -52,6 +52,8 @@ struct PageTextView: NSViewRepresentable {
         private var shownTextSize: Double?
         private var appliedHighlightsVersion: Int?
         private var appliedCurrent: FindMatch?
+        private var appliedDarkText: Bool?
+        private weak var finder: PageFinder?
         private var scrollObserver: NSObjectProtocol?
         private var didRestoreScroll = false
 
@@ -107,6 +109,12 @@ struct PageTextView: NSViewRepresentable {
             textView.maxSize = NSSize(width: unbounded, height: unbounded)
             textView.onHoverLine = { [weak self] line in self?.hoverChanged(to: line) }
             textView.menuForLine = { [weak self] line in self?.linkMenu(forLine: line) }
+            // Match text color depends on light/dark, so a mode switch while
+            // a search is showing re-applies the highlights.
+            textView.onAppearanceChange = { [weak self] in
+                guard let self, let finder = self.finder else { return }
+                self.applyHighlights(from: finder)
+            }
 
             let scrollView = NSScrollView()
             scrollView.hasVerticalScroller = true
@@ -262,19 +270,27 @@ struct PageTextView: NSViewRepresentable {
         // MARK: Find
 
         func applyHighlights(from finder: PageFinder) {
+            self.finder = finder
             guard let textView, let layoutManager = textView.layoutManager, let document else { return }
             let current = finder.currentMatch.flatMap { $0.tabID == tab.id ? $0 : nil }
-            guard appliedHighlightsVersion != finder.highlightsVersion || appliedCurrent != current else { return }
+            let darkText = Palette.findMatchUsesDarkText(in: textView.effectiveAppearance)
+            guard appliedHighlightsVersion != finder.highlightsVersion || appliedCurrent != current
+                    || appliedDarkText != darkText else { return }
             appliedHighlightsVersion = finder.highlightsVersion
             appliedCurrent = current
+            appliedDarkText = darkText
 
             let whole = NSRange(location: 0, length: document.length)
             layoutManager.removeTemporaryAttribute(.backgroundColor, forCharacterRange: whole)
             layoutManager.removeTemporaryAttribute(.foregroundColor, forCharacterRange: whole)
             let ranges = document.highlightRanges(finder.highlights[tab.id], current: current)
             for range in ranges.all {
-                layoutManager.addTemporaryAttribute(.backgroundColor, value: Palette.mossWashColor,
+                layoutManager.addTemporaryAttribute(.backgroundColor, value: Palette.findMatchColor,
                                                     forCharacterRange: range)
+                if darkText {
+                    layoutManager.addTemporaryAttribute(.foregroundColor, value: NSColor.black,
+                                                        forCharacterRange: range)
+                }
             }
             if let range = ranges.current {
                 layoutManager.addTemporaryAttributes(
@@ -384,6 +400,7 @@ struct GutterSymbol: Equatable {
 /// icons in the left gutter, and tracks the link under the pointer.
 final class PageNSTextView: NSTextView {
     var onHoverLine: ((Int?) -> Void)?
+    var onAppearanceChange: (() -> Void)?
     var menuForLine: ((Int) -> NSMenu?)?
     private(set) var hoveredLine: Int?
     /// Set while Copy as Shown runs, to copy the lines exactly as drawn.
@@ -472,6 +489,11 @@ final class PageNSTextView: NSTextView {
     }
 
     // MARK: Hover
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        onAppearanceChange?()
+    }
 
     override func updateTrackingAreas() {
         super.updateTrackingAreas()

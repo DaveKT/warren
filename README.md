@@ -81,4 +81,5 @@ swift build && ./.build/debug/Warren
   (Network.framework)
 - `Sources/Warren/Views` — SwiftUI interface
 - `Sources/Warren/Export` — TXT/Markdown page export
-- `Scripts` — app-bundle assembly and icon generation
+- `Scripts` — app-bundle assembly and release DMG packaging
+- `Resources` — the app icon (`AppIcon.icns`)

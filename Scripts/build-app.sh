@@ -42,24 +42,9 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
 </plist>
 PLIST
 
-# App icon: render the rabbit emoji into an .icns if we can.
-if [[ ! -f build/AppIcon.icns ]]; then
-    echo "Generating app icon…"
-    swift Scripts/makeicon.swift build/icon_1024.png || true
-    if [[ -f build/icon_1024.png ]]; then
-        ICONSET="build/AppIcon.iconset"
-        rm -rf "$ICONSET"; mkdir -p "$ICONSET"
-        for size in 16 32 64 128 256 512; do
-            sips -z $size $size build/icon_1024.png --out "$ICONSET/icon_${size}x${size}.png" >/dev/null
-            double=$((size * 2))
-            sips -z $double $double build/icon_1024.png --out "$ICONSET/icon_${size}x${size}@2x.png" >/dev/null
-        done
-        iconutil -c icns "$ICONSET" -o build/AppIcon.icns
-    fi
-fi
-[[ -f build/AppIcon.icns ]] && cp build/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 
-# sips/iconutil leave extended attributes behind that codesign rejects.
+# Copied files can carry extended attributes that codesign rejects.
 xattr -cr "$APP"
 
 # Developer ID + hardened runtime (required for notarization) when the

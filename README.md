@@ -50,6 +50,15 @@ directly — no Gatekeeper workarounds needed.
   `~/Library/Application Support/Warren/history.json`; History menu with
   recent pages, ⌘Y manager with search and per-item removal, and
   clear-by-age (past hour / 4 hours / day / all)
+- **Restore Last Session** — History → Reopen All Windows from Last
+  Session brings back the windows and tabs open at the last quit, with
+  their back/forward history and window positions; Settings → General
+  can do it at every launch. Saved to
+  `~/Library/Application Support/Warren/session.json`; pages are fetched
+  again when each tab is first shown
+- **Accent colors** — monochrome by default; Settings → Appearance offers
+  Gopher Moss, Sunset, and Roots themes that color links and the active
+  tab, with link colors tuned for contrast in light and dark mode
 - **Find on Page** — ⌘F opens a slim find bar that highlights matches as
   you type; ⌘G / ⇧⌘G (or Return / ⇧Return) step through them. Options
   for case matching, regular expressions, and searching all tabs in the

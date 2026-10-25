@@ -16,6 +16,7 @@ struct PageTextView: NSViewRepresentable {
     @EnvironmentObject private var finder: PageFinder
     let content: TabContent
     @AppStorage(ContentTextSize.storageKey) private var textSize = ContentTextSize.default
+    @AppStorage(Theme.storageKey) private var theme = Theme.monochrome
 
     func makeCoordinator() -> Coordinator {
         Coordinator(tab: tab, historyIndex: tab.historyIndex)
@@ -31,6 +32,7 @@ struct PageTextView: NSViewRepresentable {
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         let coordinator = context.coordinator
         coordinator.store = store
+        coordinator.apply(theme)
         coordinator.show(content, textSize: textSize)
         coordinator.applyHighlights(from: finder)
         coordinator.revealPendingMatch(from: finder)
@@ -50,6 +52,7 @@ struct PageTextView: NSViewRepresentable {
         private var document: PageDocument?
         private var shownContent: TabContent?
         private var shownTextSize: Double?
+        private var shownTheme: Theme?
         private var appliedHighlightsVersion: Int?
         private var appliedCurrent: FindMatch?
         private var appliedDarkText: Bool?
@@ -95,10 +98,6 @@ struct PageTextView: NSViewRepresentable {
             textView.isContinuousSpellCheckingEnabled = false
             textView.isGrammarCheckingEnabled = false
             textView.isAutomaticLinkDetectionEnabled = false
-            textView.linkTextAttributes = [
-                .foregroundColor: NSColor.controlAccentColor,
-                .cursor: NSCursor.pointingHand,
-            ]
             textView.drawsBackground = true
             textView.backgroundColor = .textBackgroundColor
             textView.textContainerInset = NSSize(width: 16, height: isMenu ? 12 : 16)
@@ -134,6 +133,20 @@ struct PageTextView: NSViewRepresentable {
             if let scrollObserver { NotificationCenter.default.removeObserver(scrollObserver) }
             scrollObserver = nil
             if textView?.hoveredLine != nil { store?.linkHoverStatus = nil }
+        }
+
+        /// Link colors come from the accent theme (Settings → Appearance).
+        func apply(_ theme: Theme) {
+            guard let textView, theme != shownTheme else { return }
+            shownTheme = theme
+            textView.linkTextAttributes = [
+                .foregroundColor: theme.linkColor,
+                .cursor: NSCursor.pointingHand,
+            ]
+            textView.hoverColor = theme.linkColor
+            if let length = textView.textStorage?.length, length > 0 {
+                textView.layoutManager?.invalidateDisplay(forCharacterRange: NSRange(location: 0, length: length))
+            }
         }
 
         // MARK: Content
@@ -403,6 +416,13 @@ final class PageNSTextView: NSTextView {
     var onAppearanceChange: (() -> Void)?
     var menuForLine: ((Int) -> NSMenu?)?
     private(set) var hoveredLine: Int?
+    /// The icon color of the link under the pointer.
+    var hoverColor: NSColor = .controlAccentColor {
+        didSet {
+            imageCache.removeAll()
+            needsDisplay = true
+        }
+    }
     /// Set while Copy as Shown runs, to copy the lines exactly as drawn.
     private var copiesAsShown = false
 
@@ -477,7 +497,7 @@ final class PageNSTextView: NSTextView {
     }
 
     private func image(for symbol: GutterSymbol, hovered: Bool) -> NSImage? {
-        let color: NSColor = symbol.isError ? .systemRed : (hovered ? .controlAccentColor : .secondaryLabelColor)
+        let color: NSColor = symbol.isError ? .systemRed : (hovered ? hoverColor : .secondaryLabelColor)
         let key = "\(symbol.name)|\(symbol.isError)|\(hovered)"
         if let cached = imageCache[key] { return cached }
         let configuration = NSImage.SymbolConfiguration(pointSize: symbolSize * 0.9, weight: .regular)

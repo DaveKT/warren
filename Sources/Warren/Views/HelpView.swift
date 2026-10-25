@@ -92,6 +92,20 @@ struct HelpView: View {
                     recent pages; ⌘Y opens the full history with search. You can \
                     remove individual visits, or clear the past hour, 4 hours, \
                     day, or everything.
+
+                    History → Reopen All Windows from Last Session brings back \
+                    the windows and tabs that were open when Warren last quit, \
+                    each with its Back and Forward history. To do this every \
+                    time Warren opens, turn it on in Settings (⌘,) → General.
+                    """)
+                }
+
+                section("Accent colors") {
+                    Text("""
+                    Warren is monochrome by default. In Settings (⌘,) → \
+                    Appearance you can pick a Gopher theme — Moss, Sunset, or \
+                    Roots — which adds a touch of color to links and the active \
+                    tab, adjusted for dark mode.
                     """)
                 }
 
@@ -154,6 +168,7 @@ struct HelpView: View {
                             ])
                             shortcutGroup("Help", [
                                 ("⌘?", "Warren Help"),
+                                ("⌘,", "Settings"),
                             ])
                         }
                     }

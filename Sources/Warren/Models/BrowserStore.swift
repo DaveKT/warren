@@ -179,6 +179,10 @@ final class BrowserStore: ObservableObject {
     func selectTab(_ tab: BrowserTab) {
         selectedTabID = tab.id
         addressBarText = tab.currentAddress?.displayString ?? ""
+        if tab.needsRestoredPage {
+            tab.needsRestoredPage = false
+            showHistoryEntry(tab)
+        }
     }
 
     func selectNextTab() {
@@ -200,6 +204,55 @@ final class BrowserStore: ObservableObject {
               let from = tabs.firstIndex(where: { $0.id == draggedID }),
               let to = tabs.firstIndex(where: { $0.id == targetID }) else { return }
         tabs.move(fromOffsets: IndexSet(integer: from), toOffset: to > from ? to + 1 : to)
+    }
+
+    // MARK: - Session
+
+    /// This store's window, for saving its frame and stacking order.
+    weak var window: NSWindow? {
+        didSet { applyPendingFrame() }
+    }
+
+    /// A restored window's saved frame, applied once the window exists.
+    private var pendingFrame: CGRect?
+
+    /// No tab in this window has been anywhere yet.
+    var isPristine: Bool { tabs.allSatisfy { $0.history.isEmpty } }
+
+    /// This window as saved in a session; nil when all its tabs are blank,
+    /// which are left out like they are for Undo Close Tab.
+    func sessionSnapshot() -> SessionSnapshot.Window? {
+        var saved: [SessionSnapshot.Tab] = []
+        var selected = 0
+        for tab in tabs {
+            let snapshot = tab.sessionSnapshot
+            if tab.id == selectedTabID {
+                // A blank selected tab hands selection to the tab before it.
+                selected = snapshot == nil ? max(saved.count - 1, 0) : saved.count
+            }
+            if let snapshot { saved.append(snapshot) }
+        }
+        guard !saved.isEmpty else { return nil }
+        return SessionSnapshot.Window(frame: window?.frame, tabs: saved, selectedTab: selected)
+    }
+
+    /// Replaces this window's tabs with a saved window's. Only the
+    /// selected tab loads now; the others load when first shown.
+    func restore(_ snapshot: SessionSnapshot.Window) {
+        let restored = snapshot.tabs.compactMap(BrowserTab.init(restoring:))
+        guard !restored.isEmpty else { return }
+        tabs = restored
+        selectTab(restored[min(max(snapshot.selectedTab, 0), restored.count - 1)])
+        pendingFrame = snapshot.frame
+        applyPendingFrame()
+    }
+
+    private func applyPendingFrame() {
+        guard let window, let frame = pendingFrame else { return }
+        pendingFrame = nil
+        // Skip a frame from a display that's no longer connected.
+        guard NSScreen.screens.contains(where: { $0.visibleFrame.intersects(frame) }) else { return }
+        window.setFrame(frame, display: true)
     }
 
     // MARK: - Navigation

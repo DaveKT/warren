@@ -19,29 +19,9 @@
 
 Right now, the only protocol supported is Gopher. Gemini is another similar protocol that users of gopher will sometimes run into and use. Warren should support Gemini.
 
-## Subtle Accent Colors, Gopher Themes
-
-At the moment, the UI is monocrome. This should be kept as the default but the user should have the ability to enhance their experience with subtle accent colors chosen from a setting menu. The additional colors should be added sparingly. They should also be adapted when dark mode is selected. Possible color schemes.
-
-**Gopher Moss**
-
-#5d5a2f, #89865b, #ac7838, #ced552, #e9e275
-
-**Gopher Sunset**
-
-#3e9cbf, #a7ecf2, #f2c43d, #f17c37, #f26d50
-
-**Gopher Roots**
-
-#555559, #c9bca4, #bb525b, #b8893d, #92b558
-
 ## Automatic Updates
 
 With the current version, the user must take action to update to the latest version of the application. It would be easier if there were a check for updates mechanism so the user could check and install updates without the any extra steps.
-
-## Restore Last Session
-
-When the app is launched, allow the user to restore their last session — the windows and tabs that were open when Warren last quit, including each tab's back/forward history — similar to Safari's History → Reopen All Windows from Last Session. It could also be offered as a setting to always restore the previous session at launch.
 
 ## Swipe Navigation
 
@@ -134,3 +114,23 @@ Some Gopher pages are dedicated to talking about technical issues, like software
 ## Command-F Find on Page ✅ DONE 2026-10-16
 
 ~~Allowing a user to find text in the active tabs using command F would help users conduct research. The find dialog could include an option to search across all open tabs. Additionally, it could support regex find. It should include both UI and keyboard shortcuts to move to and back from the next instance of the matched string. The find dialog should be minimally intrusive.~~ Edit → Find (⌘F) opens a slim bar under the tab bar, with the search field and controls centered on the page, that highlights matches as you type (the current match in bright yellow; others in a subtle Gopher Moss wash in light mode, and in solid Moss olive #89865b with black text in dark mode for contrast) and scrolls to the current one. ◀ ▶ buttons, ⌘G / ⇧⌘G, and Return / ⇧Return move between matches (wrapping); Esc or Done closes it. Toggles for Match Case (Aa), Regular Expression (.*), and All Tabs — with All Tabs on, Next/Previous step into the next tab with matches, and the count shows how many tabs matched. Works on menus and text files; matches are found within single lines.
+
+## Restore Last Session ✅ DONE 2026-10-25
+
+~~When the app is launched, allow the user to restore their last session — the windows and tabs that were open when Warren last quit, including each tab's back/forward history — similar to Safari's History → Reopen All Windows from Last Session. It could also be offered as a setting to always restore the previous session at launch.~~ History → Reopen All Windows from Last Session reopens the windows open at the last quit, with their tabs, each tab's back/forward history, the selected tab, and window positions; Settings (⌘,) → General → "Reopen windows and tabs from last session when Warren opens" does it at every launch. The session is saved at quit to `session.json` beside the history and bookmarks. Only addresses and titles are saved: the selected tab loads its page right away and the others when first shown, without adding visits to History. Blank tabs and windows are left out, still-blank windows are filled before new ones open, and a session that was never reopened survives a launch-and-quit with nothing open.
+
+## Subtle Accent Colors, Gopher Themes ✅ DONE 2026-10-25
+
+~~At the moment, the UI is monocrome. This should be kept as the default but the user should have the ability to enhance their experience with subtle accent colors chosen from a setting menu. The additional colors should be added sparingly. They should also be adapted when dark mode is selected. Possible color schemes.~~ Settings (⌘,) → Appearance picks the accent colors: Monochrome (the default, Warren's standard look) or one of the three Gopher themes below. A theme colors only the menu links (and the icon of the link under the pointer) and the active tab's fill. Link colors are adjusted per mode to read at 4.5:1 or better against the page: Moss #5d5a2f light / #ced552 dark; Sunset #307995 (a darkened #3e9cbf) light / #3e9cbf dark; Roots #bb525b light / #c77178 (a lightened #bb525b) dark. Active-tab fills: Moss #ac7838, Sunset #f17c37, Roots #b8893d, at the same strength as the original Moss fill. Find highlights keep their own colors in every theme. The choice persists across launches.
+
+**Gopher Moss**
+
+#5d5a2f, #89865b, #ac7838, #ced552, #e9e275
+
+**Gopher Sunset**
+
+#3e9cbf, #a7ecf2, #f2c43d, #f17c37, #f26d50
+
+**Gopher Roots**
+
+#555559, #c9bca4, #bb525b, #b8893d, #92b558

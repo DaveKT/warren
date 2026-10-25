@@ -93,6 +93,7 @@ private struct TabButton: View {
     @ObservedObject var tab: BrowserTab
     let isSelected: Bool
     @State private var isHovering = false
+    @AppStorage(Theme.storageKey) private var theme = Theme.monochrome
 
     var body: some View {
         HStack(spacing: 6) {
@@ -122,7 +123,7 @@ private struct TabButton: View {
         .background {
             if isSelected {
                 Rectangle().fill(.background)
-                Palette.mossWash
+                theme.tabWash
             }
         }
         .overlay(alignment: .trailing) { Divider().frame(height: 16) }

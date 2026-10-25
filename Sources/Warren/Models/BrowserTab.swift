@@ -38,6 +38,10 @@ final class BrowserTab: ObservableObject, Identifiable {
     /// Back/Forward navigation, consumed by ScrollMemory).
     var pendingScrollRestore: CGPoint?
 
+    /// Reopened from the last session without its page; the page is
+    /// fetched when the tab is first shown.
+    var needsRestoredPage = false
+
     var currentAddress: GopherAddress? {
         guard history.indices.contains(historyIndex) else { return nil }
         return history[historyIndex].address

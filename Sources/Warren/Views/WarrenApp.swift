@@ -4,10 +4,11 @@ import SwiftUI
 struct WarrenApp: App {
     @StateObject private var bookmarks = BookmarkStore()
     @StateObject private var history = HistoryStore()
+    @StateObject private var session = SessionStore()
 
     var body: some Scene {
         WindowGroup(id: BrowserWindow.sceneID) {
-            BrowserWindow(history: history)
+            BrowserWindow(history: history, session: session)
                 .environmentObject(bookmarks)
                 .environmentObject(history)
                 .frame(minWidth: 700, minHeight: 450)
@@ -17,7 +18,11 @@ struct WarrenApp: App {
         }
         .defaultSize(width: 1000, height: 720)
         .commands {
-            BrowserCommands(history: history, bookmarks: bookmarks)
+            BrowserCommands(history: history, bookmarks: bookmarks, session: session)
+        }
+
+        Settings {
+            SettingsView()
         }
 
         Window("Warren Help", id: "help") {
@@ -33,10 +38,13 @@ private struct BrowserWindow: View {
     static let sceneID = "browser"
 
     @StateObject private var store: BrowserStore
+    let session: SessionStore
     @Environment(\.undoManager) private var undoManager
+    @Environment(\.openWindow) private var openWindow
 
-    init(history: HistoryStore) {
+    init(history: HistoryStore, session: SessionStore) {
         _store = StateObject(wrappedValue: BrowserStore(history: history))
+        self.session = session
     }
 
     var body: some View {
@@ -46,7 +54,11 @@ private struct BrowserWindow: View {
             // Menu-bar commands act on the frontmost window's store.
             .focusedSceneObject(store)
             .focusedSceneObject(store.finder)
-            .onAppear { store.undoManager = undoManager }
+            .background(WindowReader { store.window = $0 })
+            .onAppear {
+                store.undoManager = undoManager
+                session.register(store) { openWindow(id: Self.sceneID) }
+            }
             .onChange(of: undoManager) { store.undoManager = undoManager }
             // A link from another app opens in a new tab of this window.
             .onOpenURL { store.openExternal($0) }
@@ -58,6 +70,7 @@ private struct BrowserWindow: View {
 private struct BrowserCommands: Commands {
     let history: HistoryStore
     let bookmarks: BookmarkStore
+    @ObservedObject var session: SessionStore
     @FocusedObject private var store: BrowserStore?
     @FocusedObject private var finder: PageFinder?
 
@@ -132,6 +145,7 @@ private struct BrowserCommands: Commands {
             Button("Reopen Closed Tab") { store?.reopenLastClosedTab() }
                 .keyboardShortcut("t", modifiers: [.command, .shift])
                 .disabled(!(store?.canReopenClosedTab ?? false))
+            ReopenSessionButton(session: session)
             Button("Show All History…") { store?.showHistoryManager = true }
                 .keyboardShortcut("y", modifiers: .command)
                 .disabled(store == nil)
@@ -183,6 +197,46 @@ private struct NewTabButton: View {
             }
         }
         .keyboardShortcut("t", modifiers: .command)
+    }
+}
+
+/// History → Reopen All Windows from Last Session.
+private struct ReopenSessionButton: View {
+    @ObservedObject var session: SessionStore
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Button("Reopen All Windows from Last Session") {
+            session.restore { openWindow(id: BrowserWindow.sceneID) }
+        }
+        .disabled(!session.canRestore)
+    }
+}
+
+/// Hands a view's NSWindow to a closure once the view is in one.
+private struct WindowReader: NSViewRepresentable {
+    let onWindow: (NSWindow) -> Void
+
+    func makeNSView(context: Context) -> ReaderView {
+        ReaderView(onWindow: onWindow)
+    }
+
+    func updateNSView(_ nsView: ReaderView, context: Context) {}
+
+    final class ReaderView: NSView {
+        private let onWindow: (NSWindow) -> Void
+
+        init(onWindow: @escaping (NSWindow) -> Void) {
+            self.onWindow = onWindow
+            super.init(frame: .zero)
+        }
+
+        required init?(coder: NSCoder) { fatalError("not used") }
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            if let window { onWindow(window) }
+        }
     }
 }
 

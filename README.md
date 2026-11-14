@@ -101,3 +101,16 @@ swift build && ./.build/debug/Warren
 - `Sources/Warren/Export` — TXT/Markdown page export
 - `Scripts` — app-bundle assembly and release DMG packaging
 - `Resources` — the app icon (`AppIcon.icns`)
+
+## License
+
+Warren's source code is released under the [MIT License](LICENSE).
+
+The license covers the code only. The name "Warren", the Warren app icon,
+and the warren1436.app domain are not licensed for use by others: if you
+distribute a modified version, please give it a different name and icon so
+it isn't mistaken for the official, notarized builds.
+
+Reference material in `docs/refs` is third-party and keeps its own terms:
+RFC 1436 is published by the IETF, and the Gopher (protocol) article is
+from Wikipedia under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).

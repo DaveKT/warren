@@ -1,0 +1,31 @@
+<?xml version="1.0" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>Warren</title>
+        <item>
+            <title>1.7b</title>
+            <pubDate>Sat, 14 Nov 2026 16:50:46 -0500</pubDate>
+            <link>https://github.com/DaveKT/warren</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/DaveKT/warren/releases/tag/v1.7b</sparkle:fullReleaseNotesLink>
+            <sparkle:version>9</sparkle:version>
+            <sparkle:shortVersionString>1.7b</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <description sparkle:format="markdown"><![CDATA[## What's new since 1.6b
+
+- **Automatic updates** — Warren → **Check for Updates…** looks for a newer version, shows what's new, and installs it for you. In Settings (⌘,) → **General**, Warren can check once a day on its own and download updates in the background, installing them when you quit. This is the first version with the updater, so copies of 1.6b and earlier need this one last manual update; from 1.7b on, updates arrive inside the app.
+- **Image lightbox** — clicking an image link on a page now opens the image over the page, which dims behind it, instead of leaving the page. Each tab keeps its own image as you switch tabs, and the rest of the window stays usable. Close it with Esc, Back (⌘[), ⌘W, the ✕ button, or a click outside the image. Large images shrink to fit the window.
+- **Full-size images in a new tab** — ⌘-click an image link, choose **Open in New Tab** from its right-click menu, or use the button beside ✕ in the lightbox to see an image at full size. Images opened from the address bar, a bookmark, or History also fill the tab, as before.
+- **Animated GIFs play** — in both the lightbox and the full-tab view.
+
+## Known minor issues
+
+- Changing the text size (⌘+ / ⌘−) clears the current text selection.
+- The link hover label can briefly show a stale link after a reload or while scrolling, until the pointer moves.
+
+The DMG and zip contain the same Developer ID–signed, Apple-notarized app. Requires macOS 14+.
+]]></description>
+            <enclosure url="https://github.com/DaveKT/warren/releases/download/v1.7b/Warren-1.7b.dmg" length="1783435" type="application/octet-stream" sparkle:edSignature="75jloGKitAAOREYHCCfRg9Om0JirCSv7eav/moznSHMSEIOs0/jozzcs59iW1u4JKF2e7chuFmhyVU+1h2xaCw=="/>
+        </item>
+    </channel>
+</rss>

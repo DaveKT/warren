@@ -48,3 +48,13 @@ Changing the text size (⌘+ / ⌘− / ⌘0) rebuilds the page text in `PageTex
 ## Link Hover Label Can Go Stale (minor)
 
 The hover label at the bottom of the window (e.g. "Menu · gopher://…") lags in two cases: after reloading with ⌘R while the pointer rests on a link, the label stays until the pointer moves; and while scrolling with the wheel under a stationary pointer, the underline and label don't follow the link that moves under the pointer until the mouse moves. Cause: the reload resets the hover state without clearing the label, and AppKit sends no mouse-moved events during scrolling. Both clear on the next pointer movement. Fix: clear the label when the page content changes, and re-check the pointer position after scrolls.
+
+## Extra BrowserStore Instances at Launch (to investigate)
+
+Launching Warren with one window created four `BrowserStore` objects, though only one window appeared. Each window's view builds its store with `StateObject(wrappedValue: BrowserStore(...))` in `BrowserWindow.init` (`WarrenApp.swift`), which SwiftUI should evaluate only once per window. Found by chance on 2026-11-14 while testing the image lightbox, when a temporary test hook in `BrowserStore.init` ran four times. The cause hasn't been investigated.
+
+No visible effect so far. The extra stores only register with the session list when their window appears (`onAppear`), so they aren't saved by Restore Last Session, and they make no network requests. Each one does create a blank tab and starts observing undo groups.
+
+To investigate: log each store's creation and `deinit`, with a stack trace, to see what builds the extras and whether they're released.
+- If they're released right away, SwiftUI is probably building and discarding extra copies of the window's root view. Keep `BrowserStore.init` free of side effects and move setup (the first tab, undo observation) to when the window appears.
+- If they're never released, they're leaking, and the store's ownership needs fixing.

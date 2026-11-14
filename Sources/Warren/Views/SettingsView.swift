@@ -15,6 +15,7 @@ struct SettingsView: View {
 
 private struct GeneralSettings: View {
     @AppStorage(SessionStore.restoreAtLaunchKey) private var restoreAtLaunch = false
+    @EnvironmentObject private var updater: AppUpdater
 
     var body: some View {
         Form {
@@ -22,6 +23,22 @@ private struct GeneralSettings: View {
             Text("Otherwise, History → Reopen All Windows from Last Session brings them back.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+
+            if updater.isEnabled {
+                Divider()
+                    .padding(.vertical, 6)
+                Toggle("Automatically check for updates", isOn: $updater.automaticallyChecksForUpdates)
+                Toggle("Automatically download and install updates", isOn: $updater.automaticallyDownloadsUpdates)
+                    .disabled(!updater.automaticallyChecksForUpdates)
+                HStack {
+                    Text("Downloaded updates install when you quit Warren.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Check Now") { updater.checkForUpdates() }
+                        .disabled(!updater.canCheckForUpdates)
+                }
+            }
         }
         .padding(20)
     }

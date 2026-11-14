@@ -9,7 +9,7 @@ with gopher URLs per [RFC 4266](https://www.rfc-editor.org/rfc/rfc4266).
 ## Install
 
 Download the latest DMG or zip from the
-[Releases page](https://github.com/DaveKT/warren/releases/latest), open it,
+[Releases page](https://github.com/DaveKT/warren/releases), open it,
 and drag Warren to the Applications folder. Requires macOS 14+.
 
 The app is Developer ID signed and notarized by Apple, so it opens
@@ -69,6 +69,11 @@ directly — no Gatekeeper workarounds needed.
   the chosen size persists across launches
 - **gopher:// link handling** — Warren registers as the system handler,
   so gopher links clicked in Safari, PDFs, or other apps open in a new tab
+- **Automatic updates** — Warren → Check for Updates… looks for a newer
+  release, shows its notes, and installs it in place. Settings → General
+  can check daily and download updates in the background to install when
+  Warren quits. Powered by [Sparkle](https://sparkle-project.org); updates
+  must be signed with Warren's EdDSA key
 - **Help** — ⌘? opens a help window with a Gopher primer, item-type
   reference, and keyboard shortcuts
 - UTF-8 with Latin-1 fallback for legacy servers; monospaced rendering so
@@ -89,6 +94,28 @@ Or, during development:
 swift build && ./.build/debug/Warren
 ```
 
+Development runs like this don't check for updates; only the app bundle
+does.
+
+## Releasing
+
+1. Bump `CFBundleShortVersionString` and `CFBundleVersion` in
+   `Scripts/build-app.sh`. Sparkle compares `CFBundleVersion`, so it must
+   go up with every release.
+2. `./Scripts/make-dmg.sh` builds, signs, and notarizes
+   `build/Warren-<version>.dmg`.
+3. Write the release notes as Markdown, then
+   `./Scripts/publish-update.sh notes.md` adds the release to
+   `appcast.xml`, signing it with the Sparkle key in the login keychain.
+4. Create the GitHub release `v<version>` with the DMG attached and the
+   same notes.
+5. Commit and push `appcast.xml`. Installed copies find the update at
+   their next check.
+
+The Sparkle private key was created once with
+`.build/artifacts/sparkle/Sparkle/bin/generate_keys` and must stay backed
+up: without it, installed copies can't be sent updates.
+
 ## Layout
 
 - `Sources/Warren/Models` — Gopher types, address/URL parsing (RFC 4266),
@@ -99,7 +126,9 @@ swift build && ./.build/debug/Warren
   in an AppKit text view (`PageTextView`) so selection spans the whole
   page and very long files render
 - `Sources/Warren/Export` — TXT/Markdown page export
-- `Scripts` — app-bundle assembly and release DMG packaging
+- `Sources/Warren/Updates` — automatic updates (Sparkle)
+- `Scripts` — app-bundle assembly, release DMG packaging, and the update
+  feed (`appcast.xml`)
 - `Resources` — the app icon (`AppIcon.icns`)
 
 ## License

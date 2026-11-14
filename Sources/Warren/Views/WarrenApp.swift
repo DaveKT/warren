@@ -5,6 +5,7 @@ struct WarrenApp: App {
     @StateObject private var bookmarks = BookmarkStore()
     @StateObject private var history = HistoryStore()
     @StateObject private var session = SessionStore()
+    @StateObject private var updater = AppUpdater()
 
     var body: some Scene {
         WindowGroup(id: BrowserWindow.sceneID) {
@@ -19,10 +20,14 @@ struct WarrenApp: App {
         .defaultSize(width: 1000, height: 720)
         .commands {
             BrowserCommands(history: history, bookmarks: bookmarks, session: session)
+            CommandGroup(after: .appInfo) {
+                CheckForUpdatesButton(updater: updater)
+            }
         }
 
         Settings {
             SettingsView()
+                .environmentObject(updater)
         }
 
         Window("Warren Help", id: "help") {

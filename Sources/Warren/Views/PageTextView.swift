@@ -34,6 +34,7 @@ struct PageTextView: NSViewRepresentable {
         coordinator.store = store
         coordinator.apply(theme)
         coordinator.show(content, textSize: textSize)
+        coordinator.setCovered(tab.lightbox != nil)
         coordinator.applyHighlights(from: finder)
         coordinator.revealPendingMatch(from: finder)
     }
@@ -133,6 +134,11 @@ struct PageTextView: NSViewRepresentable {
             if let scrollObserver { NotificationCenter.default.removeObserver(scrollObserver) }
             scrollObserver = nil
             if textView?.hoveredLine != nil { store?.linkHoverStatus = nil }
+        }
+
+        /// An image lightbox is showing over the page.
+        func setCovered(_ covered: Bool) {
+            textView?.isCovered = covered
         }
 
         /// Link colors come from the accent theme (Settings → Appearance).
@@ -438,6 +444,48 @@ final class PageNSTextView: NSTextView {
     private var imageCache: [String: NSImage] = [:]
     private var hoverArea: NSTrackingArea?
 
+    /// Set while an image lightbox covers the page. The lightbox blocks
+    /// clicks and scrolling, but tracking areas, cursor rects, and the
+    /// first responder ignore views drawn on top, so without this the
+    /// links beneath would still react to the pointer, and the keyboard
+    /// would still scroll and select the dimmed page.
+    var isCovered = false {
+        didSet {
+            guard isCovered != oldValue else { return }
+            if isCovered { unmarkHoveredLine() }
+            window?.invalidateCursorRects(for: self)
+            // Changing the first responder can't happen mid view update.
+            DispatchQueue.main.async { [weak self] in self?.updateFocusForCover() }
+        }
+    }
+    /// Keyboard focus was taken from this view when it was covered, and
+    /// goes back when it's uncovered.
+    private var yieldedFocus = false
+
+    override var acceptsFirstResponder: Bool { !isCovered && super.acceptsFirstResponder }
+
+    private func updateFocusForCover() {
+        guard let window else { return }
+        if isCovered {
+            if window.firstResponder === self {
+                yieldedFocus = true
+                window.makeFirstResponder(nil)
+            }
+        } else if yieldedFocus {
+            yieldedFocus = false
+            // Unless focus has since gone somewhere else, like the address bar.
+            if window.firstResponder === window { window.makeFirstResponder(self) }
+        }
+    }
+
+    override func resetCursorRects() {
+        if !isCovered { super.resetCursorRects() }
+    }
+
+    override func cursorUpdate(with event: NSEvent) {
+        if !isCovered { super.cursorUpdate(with: event) }
+    }
+
     /// Page text carries internal attributes (fonts, item links) that
     /// shouldn't travel to other apps, so only the plain-string type is
     /// offered. It must be one of super's own types: NSTextView can't write
@@ -532,6 +580,7 @@ final class PageNSTextView: NSTextView {
     }
 
     override func mouseMoved(with event: NSEvent) {
+        guard !isCovered else { return }
         super.mouseMoved(with: event)
         setHoveredLine(linkLine(at: convert(event.locationInWindow, from: nil)))
     }
@@ -539,6 +588,17 @@ final class PageNSTextView: NSTextView {
     override func mouseExited(with event: NSEvent) {
         super.mouseExited(with: event)
         setHoveredLine(nil)
+    }
+
+    /// Drops the hover underline and icon color without reporting it; the
+    /// store clears its own hover label when a lightbox opens.
+    private func unmarkHoveredLine() {
+        guard let old = hoveredLine else { return }
+        if let document {
+            layoutManager?.removeTemporaryAttribute(.underlineStyle, forCharacterRange: document.range(ofLine: old))
+        }
+        hoveredLine = nil
+        needsDisplay = true
     }
 
     func clearHover() {

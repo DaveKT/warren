@@ -192,7 +192,6 @@ struct TabContentView: View {
                     .transition(.opacity)
             }
         }
-        .animation(.easeOut(duration: 0.15), value: tab.lightbox?.id)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 

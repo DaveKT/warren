@@ -144,6 +144,16 @@ struct HelpView: View {
                     """)
                 }
 
+                section("Updates") {
+                    Text("""
+                    Choose Warren → Check for Updates… to look for a newer \
+                    version; Warren shows what's new and installs it for you. In \
+                    Settings (⌘,) → General you can have Warren check once a day \
+                    on its own, and download updates in the background so they \
+                    install when you quit.
+                    """)
+                }
+
                 section("Keyboard shortcuts") {
                     HStack(alignment: .top, spacing: 40) {
                         VStack(alignment: .leading, spacing: 18) {

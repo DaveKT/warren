@@ -19,10 +19,6 @@
 
 Right now, the only protocol supported is Gopher. Gemini is another similar protocol that users of gopher will sometimes run into and use. Warren should support Gemini.
 
-## Automatic Updates
-
-With the current version, the user must take action to update to the latest version of the application. It would be easier if there were a check for updates mechanism so the user could check and install updates without the any extra steps.
-
 ## Swipe Navigation
 
 Users of macOS are used to being able to use two fingers to swipe left and right when navigating web pages in Safari. Users of Warren should be able to use the same gestures to navigate pages, both back to return to a previous page and forward to return to a page they just left. This will give us a similar experience to what Mac users are already used to.
@@ -115,6 +111,10 @@ Some Gopher pages are dedicated to talking about technical issues, like software
 **Gopher Roots**
 
 #555559, #c9bca4, #bb525b, #b8893d, #92b558
+
+## Automatic Updates ✅ DONE 2026-11-14
+
+~~With the current version, the user must take action to update to the latest version of the application. It would be easier if there were a check for updates mechanism so the user could check and install updates without the any extra steps.~~ Warren → Check for Updates… looks for a newer release, shows its notes, and installs it in place, using [Sparkle](https://sparkle-project.org). Settings (⌘,) → General adds "Automatically check for updates" (once a day) and "Automatically download and install updates" (installed when Warren quits), with a Check Now button. The feed is `appcast.xml` at the root of the repository's `main` branch, and updates must be signed with Warren's EdDSA key, whose public half is in `Scripts/build-app.sh`. `Scripts/build-app.sh` embeds and signs Sparkle; `Scripts/publish-update.sh` adds a release to the feed and refuses to write an unsigned entry. The updater only starts in the built app, not in development runs. 1.6b and earlier have no updater, so those copies need one last manual update.
 
 ## Image Presentation ✅ DONE 2026-11-14
 

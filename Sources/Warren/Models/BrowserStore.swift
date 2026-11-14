@@ -452,6 +452,10 @@ final class BrowserStore: ObservableObject {
             guard tab.lightboxGeneration == generation else { return } // closed or superseded
             tab.lightbox?.state = state
             tab.lightboxFetch = nil
+            if case .loaded = state {
+                // As for a page: History lists it by name, not by link text.
+                historyStore?.updateTitle(for: address, title: Self.title(for: address))
+            }
             statusMessage = ""
         }
     }
@@ -468,9 +472,14 @@ final class BrowserStore: ObservableObject {
 
     /// Back, Reload, and Close Tab change what they do while an image is
     /// open; the menus and toolbar watch this store, not the tab.
+    ///
+    /// The image fades in and out here rather than with an implicit
+    /// animation in the view, which would also fade one tab's image over
+    /// another tab's page when switching tabs.
     private func setLightbox(_ lightbox: Lightbox?, in tab: BrowserTab) {
         objectWillChange.send()
-        tab.lightbox = lightbox
+        if lightbox != nil { linkHoverStatus = nil } // the link under the pointer is covered
+        withAnimation(.easeOut(duration: 0.15)) { tab.lightbox = lightbox }
     }
 
     // MARK: - Loading

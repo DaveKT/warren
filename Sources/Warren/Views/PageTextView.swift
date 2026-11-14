@@ -229,11 +229,17 @@ struct PageTextView: NSViewRepresentable {
 
         func textView(_ textView: NSTextView, clickedOnLink link: Any, at charIndex: Int) -> Bool {
             guard let item = item(forLink: link) else { return false }
-            // ⌘-click opens menus and text files in a new tab, as in a browser.
+            // ⌘-click opens menus, text files, and images in a new tab, as
+            // in a browser; a plain click on an image opens it over the page.
             let newTab = NSApp.currentEvent?.modifierFlags.contains(.command) == true
-                && (item.type == .menu || item.type == .textFile)
+                && Self.opensInNewTab(item)
             store?.open(item: item, inNewTab: newTab)
             return true
+        }
+
+        /// Items that can be shown in a tab of their own.
+        private static func opensInNewTab(_ item: GopherItem) -> Bool {
+            item.type == .menu || item.type == .textFile || item.type?.isImage == true
         }
 
         private func item(forLink link: Any) -> GopherItem? {
@@ -263,7 +269,7 @@ struct PageTextView: NSViewRepresentable {
             guard let items = document?.items, items.indices.contains(line) else { return nil }
             let item = items[line]
             let menu = NSMenu()
-            if item.type == .menu || item.type == .textFile {
+            if Self.opensInNewTab(item) {
                 menu.addItem(ClosureMenuItem("Open in New Tab") { [weak self] in
                     self?.store?.open(item: item, inNewTab: true)
                 })

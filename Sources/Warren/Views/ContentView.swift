@@ -17,7 +17,7 @@ struct ContentView: View {
             if let tab = store.selectedTab {
                 TabContentView(tab: tab)
                     .overlay(alignment: .bottomLeading) {
-                        if let status = store.linkHoverStatus {
+                        if let status = store.linkHoverStatus, tab.lightbox == nil {
                             Text(status)
                                 .font(.caption)
                                 .lineLimit(1)
@@ -185,7 +185,14 @@ struct TabContentView: View {
                     .padding(24)
                     .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
             }
+
+            // An image opened from a link on this page, drawn over it.
+            if let lightbox = tab.lightbox {
+                LightboxView(tab: tab, lightbox: lightbox)
+                    .transition(.opacity)
+            }
         }
+        .animation(.easeOut(duration: 0.15), value: tab.lightbox?.id)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 

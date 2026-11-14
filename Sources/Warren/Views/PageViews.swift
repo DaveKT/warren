@@ -9,7 +9,9 @@ enum ContentTextSize {
     static let step: Double = 1
 }
 
-/// Renders inline images (types g, I, p).
+/// Renders an image (types g, I, p) full-tab, at its own size, when it's
+/// opened from the address bar, a bookmark, History, or in a new tab.
+/// Images clicked on a page open in a `LightboxView` instead.
 struct ImagePageView: View {
     let data: Data
     var memory: ScrollMemory? = nil
@@ -17,7 +19,8 @@ struct ImagePageView: View {
     var body: some View {
         if let image = NSImage(data: data) {
             ScrollView([.vertical, .horizontal]) {
-                Image(nsImage: image)
+                AnimatedImage(image: image)
+                    .frame(width: image.size.width, height: image.size.height)
                     .padding(16)
                     .background(memory)
             }

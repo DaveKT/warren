@@ -37,25 +37,6 @@ Users of macOS are used to being able to use two fingers to swipe left and right
 - Respect the system setting System Settings → Trackpad → More Gestures → "Swipe between pages" (`NSEvent.isSwipeTrackingFromScrollEventsEnabled`), and support Magic Mouse swipes, which arrive the same way.
 - Do nothing (or give a small rubber-band bounce) when there is no page to go back or forward to.
 
-## Image Presentation
-
-Today, when a user clicks a link in Warren that points to an image (GIF, PNG, or other image types), the image replaces the page in the tab, navigating away from the page that had the link. For this kind of content, navigating away is less user-friendly than showing the image over the page in a lightbox. Instead of replacing the page, clicking an image link would open the image in a lightbox: an overlay on top of the tab's page that dims the page beneath it and is tied to the tab that opened it. It is not a true macOS modal dialog, which would lock the whole window — the tab bar and other tabs stay usable while an image is showing. If the user has an image open and switches to another tab, they see that tab's content without the image; if they switch back to the tab that opened the image, the image is still showing unless they dismissed it. The lightbox stays up until the user dismisses it, and it should have the same look and feel as the rest of Warren.
-
-**Decisions:**
-
-- Opening an image in the lightbox does not add an entry to the tab's back/forward list. It is still recorded in History.
-- The lightbox is only for image links clicked on a page. Images reached any other way — typed into the address bar, opened from a bookmark or History, or opened with Open in New Tab — are shown full-tab, as they are today.
-- While the lightbox is open, Esc, Back (⌘[, the toolbar button, or a back swipe), and ⌘W close the image first rather than navigating or closing the tab.
-- Undo Close Tab and Restore Last Session do not bring the image back; they reopen the tab showing the page that launched the image.
-- Animated GIFs should animate in the lightbox (the current full-tab image view likely shows only the first frame, so the full-tab view should animate them as well).
-
-**Notes:**
-
-- Lightbox state belongs on each tab (`BrowserTab`), not in its history, and is drawn inside that tab's content view, so each tab keeps or hides its own image as the user switches tabs.
-- The image is fetched without navigating; show a progress indicator in the lightbox while it loads, and an error in the lightbox if it fails.
-- Back (menu item and toolbar button) is currently disabled when the tab has no earlier page; it must be enabled while the lightbox is open so it can close the image even on a tab's first page.
-- The Help page's item-type table says images "Show the image in the tab" and will need updating.
-
 ## Code Highlighting
 
 Some Gopher pages are dedicated to talking about technical issues, like software development. Those pages may have code snippets to demonstrate a point. Code snippets may be in languages like C, Java, Python, BASH, ZSH, or configuration files like YAML. It would be nice to provide syntax highlighting where code is detected. The highlighting should not interfere with the page formatting. The user should be able to toggle this feature on and off.
@@ -134,3 +115,7 @@ Some Gopher pages are dedicated to talking about technical issues, like software
 **Gopher Roots**
 
 #555559, #c9bca4, #bb525b, #b8893d, #92b558
+
+## Image Presentation ✅ DONE 2026-11-14
+
+~~Today, when a user clicks a link in Warren that points to an image (GIF, PNG, or other image types), the image replaces the page in the tab, navigating away from the page that had the link. For this kind of content, navigating away is less user-friendly than showing the image over the page in a lightbox. Instead of replacing the page, clicking an image link would open the image in a lightbox: an overlay on top of the tab's page that dims the page beneath it and is tied to the tab that opened it. It is not a true macOS modal dialog, which would lock the whole window — the tab bar and other tabs stay usable while an image is showing. If the user has an image open and switches to another tab, they see that tab's content without the image; if they switch back to the tab that opened the image, the image is still showing unless they dismissed it. The lightbox stays up until the user dismisses it, and it should have the same look and feel as the rest of Warren.~~ Clicking an image link (g, I, p) on a page opens the image in a lightbox over that tab's page, which dims beneath it, with the link's title and address in a header and Open in New Tab and close buttons. The lightbox lives on the tab (not in its back/forward list) and is drawn inside its content, so the tab bar and other tabs stay usable and each tab keeps or hides its own image as you switch. A spinner shows while the image loads, and an error with Try Again if it fails; Reload refetches the image. Large images shrink to fit; small ones keep their size. Esc, Back (⌘[, the toolbar button — enabled while an image is open, even on a tab's first page — or any future back swipe, which goes through the same Back), ⌘W (File → Close Image), the close button, or a click outside the image close it; navigating the tab closes it too. The visit is recorded in History without a back/forward entry. Images reached any other way — address bar, bookmark, History, or ⌘-click / Open in New Tab (now offered for image links too) — show full-tab. Undo Close Tab and Restore Last Session reopen the page, not the image. Animated GIFs animate in both the lightbox and the full-tab view (NSImageView instead of SwiftUI's Image). Help's item-type table and a new "Viewing images" section describe it.

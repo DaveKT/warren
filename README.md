@@ -25,7 +25,7 @@ directly — no Gatekeeper workarounds needed.
   - `4`/`5`/`6`/`9` binary types (BinHex, DOS, uuencoded, binary → download)
   - `7` index-search servers (query prompt, TAB-separated search string)
   - `8`/`T` telnet / tn3270 (handed to the system `telnet://` handler)
-  - `g`/`I` images rendered inline
+  - `g`/`I` images shown in a lightbox over the page (animated GIFs play)
   - Plus the de facto extensions `i` (info), `h` (HTML/`URL:` links opened
     in your web browser), `s` (sound), `p` (PNG), `d` (document)
 - **Tabs** — ⌘T new tab, ⌘W close tab, per-tab history; drag tabs to
@@ -40,6 +40,14 @@ directly — no Gatekeeper workarounds needed.
   links keep their line breaks); right-click → Copy as Shown copies the
   lines exactly
 - **Back / Forward / Reload** — ⌘[ , ⌘] , ⌘R, with instant cached history
+- **Image lightbox** — clicking an image link on a page opens the image
+  over the page, which dims beneath it, instead of leaving the page. Each
+  tab keeps its own image as you switch tabs, and the rest of the window
+  stays usable. Esc, Back (⌘[), ⌘W, the close button, or a click outside
+  the image closes it. The visit goes into History but not into the tab's
+  back/forward list. Images opened any other way — address bar, bookmark,
+  History, or ⌘-click / Open in New Tab — show full-tab; animated GIFs
+  play in both
 - **Bookmarks** — ⌘D opens an add sheet with title and folder choice;
   nestable folders appear as submenus in the toolbar and menu bar and as
   an outline in the manager (new folder, rename, move, multi-remove).

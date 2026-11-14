@@ -1,4 +1,4 @@
-import CoreGraphics
+import AppKit
 import Foundation
 
 /// What a tab is currently showing.
@@ -17,6 +17,21 @@ struct HistoryEntry {
     var content: TabContent?
 }
 
+/// An image opened from a link on the page, shown in a lightbox over the
+/// tab's page. It belongs to the tab but not to its back/forward history.
+struct Lightbox: Identifiable {
+    enum State {
+        case loading
+        case loaded(NSImage)
+        case failed(String)
+    }
+
+    let id = UUID()
+    var address: GopherAddress
+    var title: String
+    var state: State = .loading
+}
+
 @MainActor
 final class BrowserTab: ObservableObject, Identifiable {
     let id = UUID()
@@ -26,8 +41,18 @@ final class BrowserTab: ObservableObject, Identifiable {
     @Published var isLoading = false
     @Published var title = "New Tab"
 
+    /// The image showing over the page, if any. Each tab keeps its own, so
+    /// switching tabs hides it and switching back shows it again.
+    @Published var lightbox: Lightbox?
+
     /// Serial number of the most recent load; stale loads are dropped.
     var loadGeneration = 0
+
+    /// Serial number of the most recent lightbox fetch, likewise.
+    var lightboxGeneration = 0
+
+    /// The lightbox image download, cancelled if the image is closed first.
+    var lightboxFetch: Task<Void, Never>?
 
     /// Last known scroll offset per history index, kept outside @Published
     /// state so scrolling doesn't trigger view updates. Used to restore
@@ -47,6 +72,7 @@ final class BrowserTab: ObservableObject, Identifiable {
         return history[historyIndex].address
     }
 
-    var canGoBack: Bool { historyIndex > 0 }
+    /// Back also closes an open image, even on the tab's first page.
+    var canGoBack: Bool { historyIndex > 0 || lightbox != nil }
     var canGoForward: Bool { historyIndex >= 0 && historyIndex < history.count - 1 }
 }

@@ -46,6 +46,22 @@ struct HelpView: View {
                     """)
                 }
 
+                section("Viewing images") {
+                    Text("""
+                    Clicking an image link on a page opens the image right over \
+                    the page, which dims behind it, so you never lose your place. \
+                    The image belongs to its tab: switch to another tab and it's \
+                    out of the way, switch back and it's still there. Close it with \
+                    Esc, Back (⌘[ or the ◀ button), ⌘W, the ✕ button, or a click \
+                    outside the image. Large images shrink to fit the window; to \
+                    see one at full size, open it in a new tab with ⌘-click, its \
+                    right-click menu, or the button beside ✕. Images opened from \
+                    the address bar, a bookmark, or History also fill the tab. \
+                    Animated GIFs play either way, and every image you open is \
+                    recorded in History.
+                    """)
+                }
+
                 section("Item types") {
                     Text("Every line in a gopher menu has a type that tells Warren what to do when you click it:")
                     Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 6) {
@@ -134,14 +150,15 @@ struct HelpView: View {
                             shortcutGroup("Tabs & Windows", [
                                 ("⌘N", "New window"),
                                 ("⌘T", "New tab"),
-                                ("⌘W", "Close tab"),
+                                ("⌘W", "Close tab or image"),
                                 ("⌘Z", "Undo close tab"),
                                 ("⇧⌘T", "Reopen closed tab"),
                                 ("⌃⇥", "Next tab"),
                                 ("⌃⇧⇥", "Previous tab"),
                             ])
                             shortcutGroup("Navigation", [
-                                ("⌘[", "Back"),
+                                ("⌘[", "Back or close image"),
+                                ("Esc", "Close image"),
                                 ("⌘]", "Forward"),
                                 ("⌘R", "Reload page"),
                                 ("⇧⌘H", "Home"),
@@ -258,9 +275,9 @@ private struct HelpItemType: Identifiable {
         .init(type: .textFile, behavior: "Shows a text file"),
         .init(type: .search, behavior: "Asks for search words, shows results"),
         .init(type: .info, behavior: "Plain text on the page — not clickable"),
-        .init(type: .gif, behavior: "Shows the image in the tab"),
-        .init(type: .image, behavior: "Shows the image in the tab"),
-        .init(type: .png, behavior: "Shows the image in the tab"),
+        .init(type: .gif, behavior: "Shows the image over the page (animated GIFs play)"),
+        .init(type: .image, behavior: "Shows the image over the page"),
+        .init(type: .png, behavior: "Shows the image over the page"),
         .init(type: .binary, behavior: "Downloads the file"),
         .init(type: .binhex, behavior: "Downloads (BinHex-encoded Mac file)"),
         .init(type: .dosBinary, behavior: "Downloads (DOS archive)"),

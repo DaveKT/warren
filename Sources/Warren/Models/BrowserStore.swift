@@ -88,6 +88,8 @@ final class BrowserStore: ObservableObject {
 
     func closeTab(_ tab: BrowserTab) {
         guard let index = tabs.firstIndex(where: { $0.id == tab.id }) else { return }
+        // Undo Close Tab brings the tab back showing its page, not the image.
+        closeImage(in: tab)
         tabs.remove(at: index)
         if tabs.isEmpty {
             newTab()
@@ -100,8 +102,14 @@ final class BrowserStore: ObservableObject {
         }
     }
 
+    /// Close Tab (⌘W) closes an open image before the tab itself.
     func closeSelectedTab() {
-        if let tab = selectedTab { closeTab(tab) }
+        guard let tab = selectedTab else { return }
+        if tab.lightbox != nil {
+            closeImage(in: tab)
+        } else {
+            closeTab(tab)
+        }
     }
 
     var canReopenClosedTab: Bool { !closedTabs.isEmpty }
@@ -279,7 +287,8 @@ final class BrowserStore: ObservableObject {
         open(address, inNewTab: !reuseBlankTab)
     }
 
-    /// Entry point for clicking a menu item.
+    /// Entry point for clicking a menu item. An image opens in a lightbox
+    /// over the page unless it's going to a new tab.
     func open(item: GopherItem, inNewTab: Bool = false) {
         guard let address = item.address else { return }
         switch item.type {
@@ -294,6 +303,8 @@ final class BrowserStore: ObservableObject {
             download(address, suggestedName: item.display)
         case .none:
             download(address, suggestedName: item.display) // unknown type: save raw
+        case .some(let t) where t.isImage && !inNewTab && selectedTab != nil:
+            showImage(address, title: item.display)
         default:
             open(address, title: item.display, inNewTab: inNewTab)
         }
@@ -324,6 +335,7 @@ final class BrowserStore: ObservableObject {
         } else {
             tab = selectedTab ?? newTab()
         }
+        closeImage(in: tab)
 
         // Push onto history, discarding any forward entries (and their
         // remembered scroll offsets, since those indexes get reused).
@@ -346,25 +358,39 @@ final class BrowserStore: ObservableObject {
         open(address, title: "\(prompt.itemTitle): \(query)")
     }
 
+    /// Back closes an open image instead of leaving the page.
     func goBack() {
-        guard let tab = selectedTab, tab.canGoBack else { return }
+        guard let tab = selectedTab else { return }
+        if tab.lightbox != nil {
+            closeImage(in: tab)
+            return
+        }
+        guard tab.canGoBack else { return }
         tab.historyIndex -= 1
         showHistoryEntry(tab)
     }
 
     func goForward() {
         guard let tab = selectedTab, tab.canGoForward else { return }
+        closeImage(in: tab)
         tab.historyIndex += 1
         showHistoryEntry(tab)
     }
 
+    /// Reloads the open image if there is one, otherwise the page.
     func reload() {
-        guard let tab = selectedTab, let address = tab.currentAddress else { return }
+        guard let tab = selectedTab else { return }
+        if tab.lightbox != nil {
+            fetchImage(into: tab)
+            return
+        }
+        guard let address = tab.currentAddress else { return }
         load(tab: tab, address: address, cacheInto: tab.historyIndex)
     }
 
     func goHome() {
         guard let tab = selectedTab else { return }
+        closeImage(in: tab)
         tab.loadGeneration += 1
         tab.isLoading = false
         tab.content = .home
@@ -384,6 +410,67 @@ final class BrowserStore: ObservableObject {
         } else {
             load(tab: tab, address: entry.address, cacheInto: tab.historyIndex)
         }
+    }
+
+    // MARK: - Lightbox
+
+    /// Shows an image linked from the current page in a lightbox over it,
+    /// without navigating: the visit goes into History but not into the
+    /// tab's back/forward list.
+    func showImage(_ address: GopherAddress, title: String) {
+        guard let tab = selectedTab else { return }
+        historyStore?.record(address: address, title: title)
+        setLightbox(Lightbox(address: address, title: title), in: tab)
+        fetchImage(into: tab)
+    }
+
+    /// Fetches the tab's lightbox image: when it opens, and again for
+    /// Reload or Try Again.
+    func fetchImage(into tab: BrowserTab) {
+        guard let address = tab.lightbox?.address else { return }
+        tab.lightboxFetch?.cancel()
+        tab.lightboxGeneration += 1
+        let generation = tab.lightboxGeneration
+        tab.lightbox?.state = .loading
+        statusMessage = "Connecting to \(address.host)…"
+
+        tab.lightboxFetch = Task {
+            let state: Lightbox.State
+            do {
+                let data = try await GopherClient.fetch(address)
+                if let image = NSImage(data: data) {
+                    state = .loaded(image)
+                } else {
+                    state = .failed("The server sent something that isn't an image Warren can show.")
+                }
+            } catch is CancellationError {
+                return
+            } catch {
+                state = .failed(error.localizedDescription)
+            }
+
+            guard tab.lightboxGeneration == generation else { return } // closed or superseded
+            tab.lightbox?.state = state
+            tab.lightboxFetch = nil
+            statusMessage = ""
+        }
+    }
+
+    /// Closes the tab's image, if it has one, uncovering the page.
+    func closeImage(in tab: BrowserTab) {
+        guard let lightbox = tab.lightbox else { return }
+        tab.lightboxGeneration += 1 // drop any fetch still in flight
+        tab.lightboxFetch?.cancel()
+        tab.lightboxFetch = nil
+        if case .loading = lightbox.state { statusMessage = "" }
+        setLightbox(nil, in: tab)
+    }
+
+    /// Back, Reload, and Close Tab change what they do while an image is
+    /// open; the menus and toolbar watch this store, not the tab.
+    private func setLightbox(_ lightbox: Lightbox?, in tab: BrowserTab) {
+        objectWillChange.send()
+        tab.lightbox = lightbox
     }
 
     // MARK: - Loading

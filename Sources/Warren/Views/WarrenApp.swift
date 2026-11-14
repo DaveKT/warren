@@ -103,7 +103,10 @@ private struct BrowserCommands: Commands {
         }
         CommandGroup(after: .newItem) {
             NewTabButton(store: store)
-            Button("Close Tab") { store?.closeSelectedTab() }
+            // ⌘W closes an open image before the tab.
+            Button(store?.selectedTab?.lightbox == nil ? "Close Tab" : "Close Image") {
+                store?.closeSelectedTab()
+            }
                 .keyboardShortcut("w", modifiers: .command)
                 .disabled(store == nil)
         }

@@ -181,8 +181,11 @@ struct TabContentView: View {
             }
             // Fresh identity per navigation so each page gets a new
             // scroll view starting at the top, instead of inheriting
-            // the previous page's scroll offset.
-            .id("\(tab.historyIndex)|\(tab.currentAddress?.urlString ?? "home")")
+            // the previous page's scroll offset. The kind of page is part
+            // of it too: while a new page loads the old one stays up under
+            // the new identity, and a text view set up then for a menu
+            // would keep wrapping the text file that replaces it.
+            .id("\(tab.historyIndex)|\(tab.currentAddress?.urlString ?? "home")|\(pageKind)")
 
             if tab.isLoading {
                 ProgressView()
@@ -198,6 +201,18 @@ struct TabContentView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// Menus wrap and text files scroll sideways, set when the text view
+    /// is made.
+    private var pageKind: String {
+        switch tab.content {
+        case .home: return "home"
+        case .menu: return "menu"
+        case .text: return "text"
+        case .image: return "image"
+        case .error: return "error"
+        }
     }
 
     /// Records this page's scroll offset and restores it on Back/Forward.

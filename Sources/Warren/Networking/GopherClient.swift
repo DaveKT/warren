@@ -70,8 +70,14 @@ private final class Session: @unchecked Sendable {
                 switch state {
                 case .ready:
                     self.sendRequest()
+                case .waiting(let error):
+                    // Refused, unreachable, an unknown host, or no network:
+                    // Network.framework would keep retrying until the idle
+                    // timeout, then report a misleading "did not respond".
+                    // A browser should say what went wrong right away.
+                    self.finish(.failure(GopherError.connectionFailed(self.describe(error))))
                 case .failed(let error):
-                    self.finish(.failure(GopherError.connectionFailed(error.localizedDescription)))
+                    self.finish(.failure(GopherError.connectionFailed(self.describe(error))))
                 case .cancelled:
                     self.finish(.failure(CancellationError()))
                 default:
@@ -81,6 +87,31 @@ private final class Session: @unchecked Sendable {
             self.resetIdleTimer()
             connection.start(queue: self.queue)
         }
+    }
+
+    /// Plain words for the common reasons a connection can't be made.
+    private func describe(_ error: NWError) -> String {
+        let host = address.host
+        switch error {
+        case .posix(let code):
+            switch code {
+            case .ECONNREFUSED:
+                return "\(host) refused the connection on port \(address.port)."
+            case .EHOSTUNREACH, .EHOSTDOWN:
+                return "\(host) can't be reached."
+            case .ENETUNREACH, .ENETDOWN:
+                return "You don't seem to be connected to the internet."
+            case .ETIMEDOUT:
+                return "\(host) took too long to answer."
+            default:
+                break
+            }
+        case .dns:
+            return "Couldn't find a server named \(host)."
+        default:
+            break
+        }
+        return error.localizedDescription
     }
 
     func cancel() {

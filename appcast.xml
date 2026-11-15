@@ -3,6 +3,34 @@
     <channel>
         <title>Warren</title>
         <item>
+            <title>1.8b</title>
+            <pubDate>Sun, 15 Nov 2026 16:17:54 -0500</pubDate>
+            <link>https://github.com/DaveKT/warren</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/DaveKT/warren/releases/tag/v1.8b</sparkle:fullReleaseNotesLink>
+            <sparkle:version>10</sparkle:version>
+            <sparkle:shortVersionString>1.8b</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <description sparkle:format="markdown"><![CDATA[## What's new since 1.7b
+
+- **Swipe between pages** — swipe sideways with two fingers on the trackpad (or one finger on a Magic Mouse) to go back and forward, as in Safari. The page follows your fingers, uncovering the page you're going to; lift to finish, or swipe the other way to stay. Pages that scroll sideways scroll to their edge first. When there's nowhere further to go, the page stretches over a field of pickaxes in your accent color and springs back. Swiping back over an image closes it. Swiping follows System Settings → Trackpad → More Gestures → **Swipe between pages**.
+- **Back to the home page** — in a tab that started on the home page, Back (⌘[, the ◀ button, or a swipe) from the first page now returns to the home page, and Forward goes on from there. Reopened sessions remember a tab that went back home.
+- **Clearer connection errors** — when a server refuses the connection or a host name doesn't exist, Warren says so straight away instead of waiting 30 seconds and reporting that the server didn't respond. With no network at all, it waits a few seconds for one to come up before saying you're offline.
+
+## Fixes
+
+- Text files opened by clicking them in a menu wrapped their long lines like a menu does. They now keep their lines as written and scroll sideways, as text files opened any other way already did.
+
+## Known minor issues
+
+- Changing the text size (⌘+ / ⌘−) clears the current text selection.
+- The link hover label can briefly show a stale link after a reload or while scrolling, until the pointer moves.
+
+The DMG and zip contain the same Developer ID–signed, Apple-notarized app. Requires macOS 14+.
+]]></description>
+            <enclosure url="https://github.com/DaveKT/warren/releases/download/v1.8b/Warren-1.8b.dmg" length="1832075" type="application/octet-stream" sparkle:edSignature="rWt8frCswPIsowRpk2wjbSM54JOfpw2/csw37OuQaHAnAulLt5PiuOr2R8jXSkFskd695SLyBR8iAp4NSP72CA=="/>
+        </item>
+        <item>
             <title>1.7b</title>
             <pubDate>Sat, 14 Nov 2026 16:50:46 -0500</pubDate>
             <link>https://github.com/DaveKT/warren</link>

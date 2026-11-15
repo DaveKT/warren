@@ -39,7 +39,16 @@ directly — no Gatekeeper workarounds needed.
   server sent as hard-wrapped lines are rejoined (ASCII art, lists, and
   links keep their line breaks); right-click → Copy as Shown copies the
   lines exactly
-- **Back / Forward / Reload** — ⌘[ , ⌘] , ⌘R, with instant cached history
+- **Back / Forward / Reload** — ⌘[ , ⌘] , ⌘R, with instant cached history.
+  In a tab that started on the home page, Back from the first page
+  returns there
+- **Swipe between pages** — swipe sideways with two fingers on the
+  trackpad (one on a Magic Mouse) to go back and forward, Safari style:
+  the page follows your fingers over a picture of the page it's going to,
+  then finishes or springs back. Pages that scroll sideways scroll to
+  their edge first. With nowhere further to go, the page stretches over a
+  field of pickaxes in the accent color. Follows System Settings →
+  Trackpad → More Gestures → Swipe between pages
 - **Image lightbox** — clicking an image link on a page opens the image
   over the page, which dims beneath it, instead of leaving the page. Each
   tab keeps its own image as you switch tabs, and the rest of the window
@@ -86,6 +95,8 @@ directly — no Gatekeeper workarounds needed.
   reference, and keyboard shortcuts
 - UTF-8 with Latin-1 fallback for legacy servers; monospaced rendering so
   Gopherspace ASCII art stays aligned
+- Clear connection errors — a refused connection or unknown host is
+  reported at once, naming the problem, rather than after a timeout
 
 ## Building
 
@@ -103,7 +114,11 @@ swift build && ./.build/debug/Warren
 ```
 
 Development runs like this don't check for updates; only the app bundle
-does.
+does. macOS also treats a bare executable as a background process: its
+window takes clicks but not typing, so the address bar won't work. To try
+a debug build by hand, put `.build/debug/Warren` and
+`.build/debug/Sparkle.framework` in an app bundle (as `build-app.sh` does)
+and open that.
 
 ## Releasing
 
@@ -112,13 +127,23 @@ does.
    go up with every release.
 2. `./Scripts/make-dmg.sh` builds, signs, and notarizes
    `build/Warren-<version>.dmg`.
-3. Write the release notes as Markdown, then
+3. Make the zip: `xcrun stapler staple build/Warren.app` (the DMG's
+   notarization covers the app), then
+   `ditto -c -k --keepParent build/Warren.app build/Warren-<version>.zip`.
+4. Write the release notes as Markdown, then
    `./Scripts/publish-update.sh notes.md` adds the release to
    `appcast.xml`, signing it with the Sparkle key in the login keychain.
-4. Create the GitHub release `v<version>` with the DMG attached and the
-   same notes.
-5. Commit and push `appcast.xml`. Installed copies find the update at
-   their next check.
+   Run it only after the DMG is stapled: stapling changes its bytes.
+5. Push `main` up to the version bump, then create the GitHub
+   pre-release `v<version>`, titled "Warren <version>", with the DMG and
+   zip attached and the same notes. `gh release create --target` needs
+   the full 40-character commit SHA.
+6. Commit and push `appcast.xml` last, so the feed never points at a
+   missing download. Installed copies find the update at their next
+   check.
+
+A notarization error 403 ("A required agreement is missing or has
+expired") means a new Apple developer agreement needs accepting.
 
 The Sparkle private key was created once with
 `.build/artifacts/sparkle/Sparkle/bin/generate_keys` and must stay backed

@@ -59,6 +59,10 @@ final class BrowserTab: ObservableObject, Identifiable {
     /// position on Back/Forward; transient, in-memory only.
     var scrollOffsets: [Int: CGPoint] = [:]
 
+    /// Pictures of pages as they looked when the user left them, per
+    /// history index, for the swipe slide. In memory only.
+    var snapshots: [Int: PageSnapshot] = [:]
+
     /// Offset the next page view should jump to once laid out (set by
     /// Back/Forward navigation, consumed by ScrollMemory).
     var pendingScrollRestore: CGPoint?
@@ -67,12 +71,30 @@ final class BrowserTab: ObservableObject, Identifiable {
     /// fetched when the tab is first shown.
     var needsRestoredPage = false
 
+    /// The tab showed Home before its first page, so Back from that page
+    /// returns to Home (history index -1). False for tabs opened straight
+    /// to a page, such as a link opened in a new tab.
+    var startedAtHome = false
+
+    /// Showing Home rather than a page.
+    var isShowingHome: Bool {
+        if case .home = content { return true }
+        return false
+    }
+
     var currentAddress: GopherAddress? {
         guard history.indices.contains(historyIndex) else { return nil }
         return history[historyIndex].address
     }
 
-    /// Back also closes an open image, even on the tab's first page.
-    var canGoBack: Bool { historyIndex > 0 || lightbox != nil }
-    var canGoForward: Bool { historyIndex >= 0 && historyIndex < history.count - 1 }
+    /// Back also closes an open image, even on the tab's first page. From
+    /// the first page it goes to Home if the tab started there (but not
+    /// when Go → Home is already showing Home over that page).
+    var canGoBack: Bool {
+        historyIndex > 0 || lightbox != nil
+            || (historyIndex == 0 && startedAtHome && !isShowingHome)
+    }
+
+    /// From Home (index -1) Forward goes to the first page.
+    var canGoForward: Bool { historyIndex < history.count - 1 }
 }

@@ -30,6 +30,11 @@ struct ContentView: View {
                                 .allowsHitTesting(false)
                         }
                     }
+                    // Two-finger swipe Back/Forward slides over all of it.
+                    .overlay {
+                        SwipeOverlay(navigator: store.swipe)
+                            .allowsHitTesting(false)
+                    }
             } else {
                 HomeView()
             }

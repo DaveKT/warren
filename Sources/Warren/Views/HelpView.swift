@@ -33,7 +33,9 @@ struct HelpView: View {
                     Text("""
                     Click menu items to follow them. Use the ◀ ▶ toolbar buttons \
                     (or ⌘[ and ⌘]) to go back and forward — Warren remembers \
-                    where you were scrolled on each page. ⌘R reloads. Hover over \
+                    where you were scrolled on each page. In a tab that started \
+                    on the home page, going back from the first page returns \
+                    there. ⌘R reloads. Hover over \
                     a link to see its type and address at the bottom of the \
                     window. Open links in a new tab with ⌘-click or from their \
                     right-click menu. Select any text on a page — across as many \
@@ -43,6 +45,21 @@ struct HelpView: View {
                     with ⌘T and ⌘W. Closed a tab by mistake? ⌘Z (or ⇧⌘T) brings \
                     it back with its history — up to the last 20 closed tabs in \
                     each window. Each window (⌘N) keeps its own set of tabs.
+                    """)
+                }
+
+                section("Swiping between pages") {
+                    Text("""
+                    Swipe left or right with two fingers on the trackpad (or one \
+                    finger on a Magic Mouse) to go back and forward, as in \
+                    Safari: the page follows your fingers, uncovering the page \
+                    you're going to. Lift to finish, or swipe the other way to \
+                    stay. A page that scrolls sideways scrolls to its edge \
+                    first. When there's nowhere further to go, the page \
+                    stretches over a field of pickaxes in your accent color and \
+                    springs back. Swiping back over an image closes it. Swiping \
+                    follows System Settings → Trackpad → More Gestures → “Swipe \
+                    between pages”.
                     """)
                 }
 

@@ -16,6 +16,9 @@ struct SessionSnapshot: Codable {
         var historyIndex: Int
         /// The tab was showing Home (Go → Home) over its history.
         var showsHome: Bool
+        /// Back from the first page returns to Home; historyIndex is -1
+        /// when the tab had gone back there. Missing in older sessions.
+        var startedAtHome: Bool?
     }
 
     struct Entry: Codable {
@@ -151,8 +154,10 @@ extension BrowserTab {
         guard !entries.isEmpty else { return nil }
         self.init()
         history = entries
-        historyIndex = min(max(snapshot.historyIndex, 0), entries.count - 1)
-        if snapshot.showsHome {
+        startedAtHome = snapshot.startedAtHome ?? false
+        let lowest = startedAtHome ? -1 : 0
+        historyIndex = min(max(snapshot.historyIndex, lowest), entries.count - 1)
+        if historyIndex == -1 || snapshot.showsHome {
             title = "New Tab"
         } else {
             title = entries[historyIndex].title
@@ -162,13 +167,17 @@ extension BrowserTab {
 
     /// The tab as saved in a session; nil for a blank tab.
     var sessionSnapshot: SessionSnapshot.Tab? {
-        guard history.indices.contains(historyIndex) else { return nil }
+        // A blank tab has no history; one that went Back to Home does.
+        guard !history.isEmpty,
+              history.indices.contains(historyIndex) || (historyIndex == -1 && startedAtHome)
+        else { return nil }
         let showsHome: Bool
         // A first page still loading also shows .home underneath.
         if case .home = content { showsHome = !isLoading && !needsRestoredPage } else { showsHome = false }
         return SessionSnapshot.Tab(
             entries: history.map { SessionSnapshot.Entry(url: $0.address.urlString, title: $0.title) },
             historyIndex: historyIndex,
-            showsHome: showsHome)
+            showsHome: showsHome && historyIndex >= 0,
+            startedAtHome: startedAtHome)
     }
 }

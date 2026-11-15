@@ -43,6 +43,9 @@ final class BrowserStore: ObservableObject {
     /// Find on Page (⌘F) for this window.
     private(set) lazy var finder = PageFinder(store: self)
 
+    /// Two-finger swipe Back/Forward for this window.
+    private(set) lazy var swipe = SwipeNavigator(store: self)
+
     /// The window's undo manager, shared with its text fields so ⌘Z
     /// undoes typing while editing and reopens closed tabs otherwise.
     weak var undoManager: UndoManager? {
@@ -330,18 +333,23 @@ final class BrowserStore: ObservableObject {
         }
 
         let tab: BrowserTab
-        if inNewTab || tabs.isEmpty {
-            tab = newTab()
+        if !inNewTab, let selected = selectedTab {
+            tab = selected
+            // Leaving the Home page of a blank tab: Back returns to it.
+            if tab.history.isEmpty { tab.startedAtHome = true }
         } else {
-            tab = selectedTab ?? newTab()
+            tab = newTab()
         }
+        swipe.capturePage(of: tab)
         closeImage(in: tab)
 
         // Push onto history, discarding any forward entries (and their
-        // remembered scroll offsets, since those indexes get reused).
+        // remembered scroll offsets and pictures, since those indexes get
+        // reused).
         if tab.historyIndex < tab.history.count - 1 {
             tab.history.removeSubrange((tab.historyIndex + 1)...)
             tab.scrollOffsets = tab.scrollOffsets.filter { $0.key < tab.history.count }
+            tab.snapshots = tab.snapshots.filter { $0.key < tab.history.count }
         }
         tab.history.append(HistoryEntry(address: address, title: title ?? address.displayString))
         tab.historyIndex = tab.history.count - 1
@@ -366,12 +374,14 @@ final class BrowserStore: ObservableObject {
             return
         }
         guard tab.canGoBack else { return }
+        swipe.capturePage(of: tab)
         tab.historyIndex -= 1
         showHistoryEntry(tab)
     }
 
     func goForward() {
         guard let tab = selectedTab, tab.canGoForward else { return }
+        swipe.capturePage(of: tab)
         closeImage(in: tab)
         tab.historyIndex += 1
         showHistoryEntry(tab)
@@ -390,6 +400,7 @@ final class BrowserStore: ObservableObject {
 
     func goHome() {
         guard let tab = selectedTab else { return }
+        swipe.capturePage(of: tab)
         closeImage(in: tab)
         tab.loadGeneration += 1
         tab.isLoading = false
@@ -399,6 +410,16 @@ final class BrowserStore: ObservableObject {
     }
 
     private func showHistoryEntry(_ tab: BrowserTab) {
+        // Back from the first page of a tab that started on Home.
+        guard tab.history.indices.contains(tab.historyIndex) else {
+            tab.loadGeneration += 1 // invalidate any in-flight load
+            tab.isLoading = false
+            tab.content = .home
+            tab.title = "New Tab"
+            addressBarText = ""
+            statusMessage = ""
+            return
+        }
         let entry = tab.history[tab.historyIndex]
         addressBarText = entry.address.displayString
         tab.title = entry.title

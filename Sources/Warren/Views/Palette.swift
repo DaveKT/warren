@@ -47,6 +47,11 @@ enum Theme: String, CaseIterable, Identifiable {
 
     static let storageKey = "theme"
 
+    /// The theme chosen in Settings, for code outside SwiftUI views.
+    static var current: Theme {
+        UserDefaults.standard.string(forKey: storageKey).flatMap(Theme.init(rawValue:)) ?? .monochrome
+    }
+
     var id: Self { self }
 
     var name: String {
@@ -90,7 +95,7 @@ enum Theme: String, CaseIterable, Identifiable {
         }
     }
 
-    private static func rgb(_ hex: Int) -> NSColor {
+    static func rgb(_ hex: Int) -> NSColor {
         NSColor(srgbRed: CGFloat((hex >> 16) & 0xFF) / 255,
                 green: CGFloat((hex >> 8) & 0xFF) / 255,
                 blue: CGFloat(hex & 0xFF) / 255, alpha: 1)

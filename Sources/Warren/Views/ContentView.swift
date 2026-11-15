@@ -18,16 +18,19 @@ struct ContentView: View {
                 TabContentView(tab: tab)
                     .overlay(alignment: .bottomLeading) {
                         if let status = store.linkHoverStatus, tab.lightbox == nil {
-                            Text(status)
-                                .font(.caption)
-                                .lineLimit(1)
-                                .truncationMode(.middle)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 3)
-                                .background(Color(nsColor: .windowBackgroundColor), in: RoundedRectangle(cornerRadius: 5))
-                                .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(Color(nsColor: .separatorColor)))
-                                .padding(6)
-                                .allowsHitTesting(false)
+                            // Not part of the page, so not in its picture.
+                            ExcludedFromPagePictures {
+                                Text(status)
+                                    .font(.caption)
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 3)
+                                    .background(Color(nsColor: .windowBackgroundColor), in: RoundedRectangle(cornerRadius: 5))
+                                    .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(Color(nsColor: .separatorColor)))
+                                    .padding(6)
+                            }
+                            .allowsHitTesting(false)
                         }
                     }
                     // Two-finger swipe Back/Forward slides over all of it.
@@ -35,6 +38,9 @@ struct ContentView: View {
                         SwipeOverlay(navigator: store.swipe)
                             .allowsHitTesting(false)
                     }
+                    // Over the slide too: after a swipe to a page that has
+                    // to load, the slide stays up until the page arrives.
+                    .overlay { LoadingIndicator(tab: tab) }
             } else {
                 HomeView()
             }
@@ -187,13 +193,6 @@ struct TabContentView: View {
             // would keep wrapping the text file that replaces it.
             .id("\(tab.historyIndex)|\(tab.currentAddress?.urlString ?? "home")|\(pageKind)")
 
-            if tab.isLoading {
-                ProgressView()
-                    .controlSize(.large)
-                    .padding(24)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-            }
-
             // An image opened from a link on this page, drawn over it.
             if let lightbox = tab.lightbox {
                 LightboxView(tab: tab, lightbox: lightbox)
@@ -219,6 +218,20 @@ struct TabContentView: View {
     private var scrollMemory: ScrollMemory? {
         guard tab.historyIndex >= 0 else { return nil }
         return ScrollMemory(tab: tab, index: tab.historyIndex)
+    }
+}
+
+/// The spinner shown over a tab's page while it loads.
+struct LoadingIndicator: View {
+    @ObservedObject var tab: BrowserTab
+
+    var body: some View {
+        if tab.isLoading {
+            ProgressView()
+                .controlSize(.large)
+                .padding(24)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        }
     }
 }
 

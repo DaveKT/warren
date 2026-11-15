@@ -24,11 +24,11 @@ enum PickaxeBackdrop {
         case .moss: (pickaxe, background) = (0xCED552, 0xE9E275)
         case .sunset: (pickaxe, background) = (0xF26D50, 0xF2C43D)
         }
-        let base = rgb(background)
+        let base = Theme.rgb(background)
         let tint = dark
             ? base.blended(withFraction: 0.86, of: NSColor(srgbRed: 0.11, green: 0.11, blue: 0.11, alpha: 1))
             : base.blended(withFraction: 0.82, of: .white)
-        return Colors(pickaxe: rgb(pickaxe), background: tint ?? base)
+        return Colors(pickaxe: Theme.rgb(pickaxe), background: tint ?? base)
     }
 
     private struct Key: Hashable {
@@ -123,11 +123,5 @@ enum PickaxeBackdrop {
             bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
         context.scaleBy(x: scale, y: scale)
         return context
-    }
-
-    private static func rgb(_ hex: Int) -> NSColor {
-        NSColor(srgbRed: CGFloat((hex >> 16) & 0xFF) / 255,
-                green: CGFloat((hex >> 8) & 0xFF) / 255,
-                blue: CGFloat(hex & 0xFF) / 255, alpha: 1)
     }
 }

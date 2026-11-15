@@ -45,6 +45,11 @@ private final class Session: @unchecked Sendable {
     private var continuation: CheckedContinuation<Data, Error>?
     private var buffer = Data()
     private var idleTimer: DispatchSourceTimer?
+    private var offlineTimer: DispatchSourceTimer?
+
+    /// How long to wait for the network to come up (the Mac just woke,
+    /// Wi-Fi or a VPN is still joining) before giving up.
+    private static let offlineGrace: TimeInterval = 3
 
     init(address: GopherAddress) {
         self.address = address
@@ -69,13 +74,22 @@ private final class Session: @unchecked Sendable {
                 guard let self else { return }
                 switch state {
                 case .ready:
+                    self.offlineTimer?.cancel()
+                    self.offlineTimer = nil
                     self.sendRequest()
                 case .waiting(let error):
-                    // Refused, unreachable, an unknown host, or no network:
+                    // Refused, unreachable or an unknown host:
                     // Network.framework would keep retrying until the idle
                     // timeout, then report a misleading "did not respond".
                     // A browser should say what went wrong right away.
-                    self.finish(.failure(GopherError.connectionFailed(self.describe(error))))
+                    if self.connection?.currentPath?.status == .satisfied {
+                        self.finish(.failure(GopherError.connectionFailed(self.describe(error))))
+                    } else {
+                        // No network at the moment. It may be about to
+                        // come up, and the connection retries by itself
+                        // when it does.
+                        self.startOfflineTimer()
+                    }
                 case .failed(let error):
                     self.finish(.failure(GopherError.connectionFailed(self.describe(error))))
                 case .cancelled:
@@ -87,6 +101,19 @@ private final class Session: @unchecked Sendable {
             self.resetIdleTimer()
             connection.start(queue: self.queue)
         }
+    }
+
+    /// Gives up, once, if the network hasn't come up within the grace period.
+    private func startOfflineTimer() {
+        guard offlineTimer == nil else { return }
+        let timer = DispatchSource.makeTimerSource(queue: queue)
+        timer.schedule(deadline: .now() + Self.offlineGrace)
+        timer.setEventHandler { [weak self] in
+            self?.finish(.failure(GopherError.connectionFailed(
+                "You don't seem to be connected to the internet.")))
+        }
+        timer.resume()
+        offlineTimer = timer
     }
 
     /// Plain words for the common reasons a connection can't be made.
@@ -176,6 +203,8 @@ private final class Session: @unchecked Sendable {
         self.continuation = nil
         idleTimer?.cancel()
         idleTimer = nil
+        offlineTimer?.cancel()
+        offlineTimer = nil
         if let connection {
             connection.stateUpdateHandler = nil
             connection.cancel()

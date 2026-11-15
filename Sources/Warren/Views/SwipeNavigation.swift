@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import QuartzCore
 import SwiftUI
 
@@ -11,7 +12,7 @@ struct PageSnapshot {
     let size: CGSize
     let appearance: NSAppearance.Name?
     let textSize: Double
-    let theme: String
+    let theme: Theme
 }
 
 /// Swipe between pages (issue #7) for one browser window: decides when a
@@ -29,8 +30,10 @@ final class SwipeNavigator {
     private weak var overlay: SwipeOverlayView?
     private var monitor: Any?
 
-    /// At most this many snapshots per tab, the ones nearest the current
-    /// page; a full-window Retina picture is several megabytes.
+    /// At most this many snapshots for the selected tab, the ones nearest
+    /// the current page; a full-window Retina picture is tens of
+    /// megabytes. Tabs in the background keep only the pages either side
+    /// of theirs, and closed tabs none.
     static let maxSnapshotsPerTab = 8
 
     private enum Gesture {
@@ -46,9 +49,22 @@ final class SwipeNavigator {
     }
     private var gesture = Gesture.idle
 
+    /// Numbers the swipe being tracked, so callbacks from one that was
+    /// abandoned are ignored.
+    private var swipeID = 0
+    /// When AppKit last reported on the tracked swipe.
+    private var lastSwipeUpdate: TimeInterval = 0
+
     /// Receives sideways gestures that scroll views pass up because their
     /// content is already at that edge (see `SwipeResponder`).
-    private lazy var responder = SwipeResponder(navigator: self)
+    private let responder = SwipeResponder()
+    /// The responder ours is spliced in after. `nextResponder` isn't
+    /// retained, so ours must come back out before it's freed.
+    private weak var responderHost: NSResponder?
+
+    /// After a swipe, what the slide is waiting on before it uncovers the
+    /// real page.
+    private var pageWaits: Set<AnyCancellable> = []
 
     /// The last event looked at and what was decided, since an event can
     /// reach both the monitor and the responder.
@@ -56,6 +72,20 @@ final class SwipeNavigator {
 
     init(store: BrowserStore) {
         self.store = store
+        responder.navigator = self
+    }
+
+    deinit {
+        let responder = responder
+        let host = responderHost
+        nonisolated(unsafe) let monitor = monitor
+        // A window's store, and this with it, is released on the main thread.
+        MainActor.assumeIsolated {
+            if let host, host.nextResponder === responder {
+                host.nextResponder = responder.nextResponder
+            }
+            if let monitor { NSEvent.removeMonitor(monitor) }
+        }
     }
 
     // MARK: - Overlay, monitor and responder
@@ -65,21 +95,37 @@ final class SwipeNavigator {
         view.onWindowChange = { [weak self] in self?.insertResponder() }
         insertResponder()
         guard monitor == nil else { return }
-        monitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
+        let events: NSEvent.EventTypeMask = [.scrollWheel, .leftMouseDown, .rightMouseDown, .otherMouseDown]
+        monitor = NSEvent.addLocalMonitorForEvents(matching: events) { [weak self] event in
             // Local monitors run on the main thread.
             nonisolated(unsafe) let event = event
-            let consumed = MainActor.assumeIsolated { self?.consumes(event) ?? false }
+            let consumed = MainActor.assumeIsolated {
+                guard let self else { return false }
+                return event.type == .scrollWheel ? self.consumes(event) : self.blocksClick(event)
+            }
             return consumed ? nil : event
         }
     }
 
     func detach(_ view: SwipeOverlayView) {
         guard overlay === view else { return }
-        removeResponder(from: view.window)
+        abandonSwipe()
+        removeResponder()
         overlay = nil
         if let monitor { NSEvent.removeMonitor(monitor) }
         monitor = nil
-        gesture = .idle
+    }
+
+    /// While the slide is up, a click on it mustn't reach the page hidden
+    /// underneath.
+    private func blocksClick(_ event: NSEvent) -> Bool {
+        guard let overlay, !overlay.isHidden, event.window === overlay.window else { return false }
+        return isOverPage(event)
+    }
+
+    private func isOverPage(_ event: NSEvent) -> Bool {
+        guard let overlay else { return false }
+        return overlay.bounds.contains(overlay.convert(event.locationInWindow, from: nil))
     }
 
     /// Puts the swipe responder in the window's responder chain just
@@ -87,7 +133,11 @@ final class SwipeNavigator {
     /// pass it a swipe. The content view is followed by its hosting view
     /// controller, so the responder goes after whatever comes last.
     private func insertResponder() {
-        guard let window = overlay?.window, let contentView = window.contentView else { return }
+        guard let window = overlay?.window, let contentView = window.contentView else {
+            // The overlay left its window (the window is closing).
+            removeResponder()
+            return
+        }
         var last: NSResponder = contentView
         var steps = 0
         while let next = last.nextResponder, next !== window, steps < 20 {
@@ -96,22 +146,18 @@ final class SwipeNavigator {
             steps += 1
         }
         guard last.nextResponder === window else { return }
+        removeResponder() // from a window the overlay was in before
         responder.nextResponder = window
         last.nextResponder = responder
+        responderHost = last
     }
 
-    private func removeResponder(from window: NSWindow?) {
-        guard let contentView = window?.contentView else { return }
-        var current: NSResponder = contentView
-        var steps = 0
-        while let next = current.nextResponder, steps < 20 {
-            if next === responder {
-                current.nextResponder = responder.nextResponder
-                return
-            }
-            current = next
-            steps += 1
+    private func removeResponder() {
+        if let host = responderHost, host.nextResponder === responder {
+            host.nextResponder = responder.nextResponder
         }
+        responderHost = nil
+        responder.nextResponder = nil
     }
 
     // MARK: - Snapshots
@@ -119,10 +165,20 @@ final class SwipeNavigator {
     /// Takes a picture of the page the selected tab is showing and files it
     /// under the page's history slot. Call just before the page changes.
     func capturePage(of tab: BrowserTab) {
-        guard tab === store?.selectedTab, let slot = pageSlot(of: tab),
+        // Pictures are only for the slide; skip the work when the system
+        // setting for it is off (or set to three fingers, which doesn't
+        // slide).
+        guard NSEvent.isSwipeTrackingFromScrollEventsEnabled,
+              tab === store?.selectedTab, let slot = pageSlot(of: tab),
               let snapshot = takeSnapshot() else { return }
         tab.snapshots[slot] = snapshot
         trimSnapshots(of: tab)
+    }
+
+    /// A tab going into the background keeps only the pictures a first
+    /// swipe would need when it comes back.
+    func trimForBackground(_ tab: BrowserTab) {
+        tab.snapshots = tab.snapshots.filter { abs($0.key - tab.historyIndex) == 1 }
     }
 
     /// The history slot of what the tab is showing: -1 for the Home page
@@ -137,6 +193,8 @@ final class SwipeNavigator {
     }
 
     private func trimSnapshots(of tab: BrowserTab) {
+        // Pictures that no longer match the window can't be shown again.
+        tab.snapshots = tab.snapshots.filter { usableSnapshot($0.value) != nil }
         guard tab.snapshots.count > Self.maxSnapshotsPerTab else { return }
         let keep = tab.snapshots.keys
             .sorted { abs($0 - tab.historyIndex) < abs($1 - tab.historyIndex) }
@@ -150,7 +208,12 @@ final class SwipeNavigator {
               overlay.bounds.width > 0, overlay.bounds.height > 0 else { return nil }
         let wasHidden = overlay.isHidden
         overlay.isHidden = true
-        defer { overlay.isHidden = wasHidden }
+        // Passing things like the link-hover label aren't part of the page.
+        let excluded = PagePictureExcludedView.hideAll(in: overlay.window)
+        defer {
+            overlay.isHidden = wasHidden
+            for view in excluded { view.isHidden = false }
+        }
 
         let rect = overlay.convert(overlay.bounds, to: contentView)
         guard let rep = contentView.bitmapImageRepForCachingDisplay(in: rect) else { return nil }
@@ -158,7 +221,7 @@ final class SwipeNavigator {
         guard let image = rep.cgImage else { return nil }
         return PageSnapshot(image: image, size: overlay.bounds.size,
                             appearance: overlay.effectiveAppearance.name,
-                            textSize: Self.currentTextSize, theme: Self.currentTheme)
+                            textSize: Self.currentTextSize, theme: .current)
     }
 
     /// A snapshot that still matches how the page would draw now.
@@ -168,17 +231,13 @@ final class SwipeNavigator {
               abs(snapshot.size.height - overlay.bounds.height) < 1,
               snapshot.appearance == overlay.effectiveAppearance.name,
               snapshot.textSize == Self.currentTextSize,
-              snapshot.theme == Self.currentTheme else { return nil }
+              snapshot.theme == .current else { return nil }
         return snapshot
     }
 
     private static var currentTextSize: Double {
         let size = UserDefaults.standard.double(forKey: ContentTextSize.storageKey)
         return size == 0 ? ContentTextSize.default : size
-    }
-
-    private static var currentTheme: String {
-        UserDefaults.standard.string(forKey: Theme.storageKey) ?? Theme.monochrome.rawValue
     }
 
     // MARK: - Gesture
@@ -203,7 +262,13 @@ final class SwipeNavigator {
     private func decide(_ event: NSEvent, forwarded: Bool) -> Bool {
         // AppKit still routes the swipe's own scroll events here while it
         // tracks them; they mustn't scroll the page.
-        if case .swiping = gesture { return true }
+        if case .swiping = gesture {
+            if event.phase == .ended || event.phase == .cancelled { expectSwipeToFinish() }
+            // A new gesture long after the tracker went quiet: it never
+            // finished, so don't let it hold the window's scrolling.
+            guard event.phase == .began, CACurrentMediaTime() - lastSwipeUpdate > 1.5 else { return true }
+            abandonSwipe()
+        }
         if case .swallowing = gesture {
             if event.phase == .ended || event.phase == .cancelled { gesture = .idle }
             return true
@@ -233,10 +298,34 @@ final class SwipeNavigator {
             gesture = beginSwipe(with: event, dx: dx, checkEdge: !forwarded)
             if case .passThrough = gesture { return false }
             return true
+        case .stationary:
+            // Fingers resting; the gesture is still going.
+            return false
         default:
             gesture = .idle
             return false
         }
+    }
+
+    /// The fingers have lifted, so AppKit should finish the swipe's
+    /// animation within moments. If it never reports back, take the slide
+    /// down rather than leave a picture over the page.
+    private func expectSwipeToFinish() {
+        let id = swipeID
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+            MainActor.assumeIsolated {
+                guard let self, self.swipeID == id, case .swiping = self.gesture else { return }
+                self.abandonSwipe()
+            }
+        }
+    }
+
+    /// Drops the swipe in progress, if any, and anything it left on screen.
+    private func abandonSwipe() {
+        swipeID += 1
+        pageWaits.removeAll()
+        gesture = .idle
+        overlay?.end()
     }
 
     /// Starts a swipe from a sideways gesture and returns what the rest of
@@ -246,7 +335,10 @@ final class SwipeNavigator {
         // System Settings → Trackpad → More Gestures → Swipe between pages.
         guard NSEvent.isSwipeTrackingFromScrollEventsEnabled,
               let store, let tab = store.selectedTab, let overlay,
-              !tab.isLoading else { return .passThrough }
+              !tab.isLoading,
+              // Only over the page: the tab bar, toolbar and find bar keep
+              // their own sideways scrolling.
+              isOverPage(event) else { return .passThrough }
 
         // Content deltas follow the scroll-direction setting; work out
         // which way the fingers actually moved. Fingers right = Back.
@@ -289,22 +381,26 @@ final class SwipeNavigator {
 
         var committed: Bool?
         let tabID = tab.id
+        swipeID += 1
+        let id = swipeID
+        lastSwipeUpdate = CACurrentMediaTime()
+        pageWaits.removeAll() // a slide still waiting on the last swipe's page
         // No clamping: past a limit of 0 the amount rubber-bands.
         event.trackSwipeEvent(options: [.lockDirection],
                               dampenAmountThresholdMin: minAmount,
                               max: maxAmount) { [weak self] amount, phase, isComplete, stop in
             MainActor.assumeIsolated {
-                guard let self, let overlay = self.overlay else {
-                    stop.pointee = true
+                guard let self, self.swipeID == id else {
+                    stop.pointee = true // abandoned
                     return
                 }
                 // A tab switch mid-swipe abandons it.
-                if self.store?.selectedTabID != tabID {
+                guard let overlay = self.overlay, self.store?.selectedTabID == tabID else {
                     stop.pointee = true
-                    overlay.end()
-                    self.gesture = .idle
+                    self.abandonSwipe()
                     return
                 }
+                self.lastSwipeUpdate = CACurrentMediaTime()
                 let progress = amount * backSign
                 overlay.show(progress: progress)
                 if phase == .ended { committed = true }
@@ -336,10 +432,39 @@ final class SwipeNavigator {
             return
         }
         if progress > 0 { store.goBack() } else { store.goForward() }
-        // Keep the picture up until the real page has drawn and restored
-        // its scroll position (ScrollMemory waits a runloop turn).
+        holdSlideUntilPageShows()
+    }
+
+    /// Keeps the slide's last frame up until the real page is showing. A
+    /// page that isn't cached (a reopened session's) has to load first,
+    /// and until it does the page underneath is still the one swiped away.
+    private func holdSlideUntilPageShows() {
+        pageWaits.removeAll()
+        guard let store, let tab = store.selectedTab, tab.isLoading else {
+            uncoverPage(fade: true)
+            return
+        }
+        tab.$isLoading.dropFirst().filter { !$0 }.first()
+            .sink { [weak self] _ in MainActor.assumeIsolated { self?.uncoverPage(fade: true) } }
+            .store(in: &pageWaits)
+        // The slide belongs to this tab's page, not the one switched to.
+        store.$selectedTabID.dropFirst().first()
+            .sink { [weak self] _ in MainActor.assumeIsolated { self?.uncoverPage(fade: false) } }
+            .store(in: &pageWaits)
+    }
+
+    private func uncoverPage(fade: Bool) {
+        pageWaits.removeAll()
+        guard fade, let overlay else {
+            overlay?.end()
+            return
+        }
+        // Give the page a moment to draw and restore its scroll position
+        // (ScrollMemory waits a runloop turn).
+        let slide = overlay.slide
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { [weak overlay] in
-            overlay?.end(fade: true)
+            guard let overlay, overlay.slide == slide else { return } // a new swipe began
+            overlay.end(fade: true)
         }
     }
 
@@ -373,14 +498,7 @@ final class SwipeNavigator {
 /// Scroll views take over a gesture once it starts, so the window-wide
 /// monitor never sees the rest of it; this is how the swipe reaches us.
 final class SwipeResponder: NSResponder {
-    private weak var navigator: SwipeNavigator?
-
-    init(navigator: SwipeNavigator) {
-        self.navigator = navigator
-        super.init()
-    }
-
-    required init?(coder: NSCoder) { fatalError("not used") }
+    weak var navigator: SwipeNavigator?
 
     override func wantsScrollEventsForSwipeTracking(on axis: NSEvent.GestureAxis) -> Bool {
         axis == .horizontal
@@ -418,6 +536,11 @@ final class SwipeOverlayView: NSView {
     private var back = Destination.endOfHistory
     private var forward = Destination.endOfHistory
     private var progress: CGFloat = 0
+    /// The theme and mode of the end-of-history backdrop for this slide.
+    private var backdrop: (theme: Theme, dark: Bool) = (.monochrome, false)
+    /// Counts slides, so a fade-out left over from the last one can't
+    /// take down the next.
+    private(set) var slide = 0
 
     override init(frame: NSRect) {
         super.init(frame: frame)
@@ -449,6 +572,8 @@ final class SwipeOverlayView: NSView {
     func begin(current: CGImage, back: Destination, forward: Destination) {
         self.back = back
         self.forward = forward
+        slide += 1
+        backdrop = (.current, Palette.isDark(effectiveAppearance))
         withoutAnimation {
             root.opacity = 1
             currentLayer.contents = current
@@ -525,13 +650,11 @@ final class SwipeOverlayView: NSView {
             layer.contents = nil
             layer.backgroundColor = NSColor.textBackgroundColor.cgColor(for: self)
         case .endOfHistory:
-            let theme = UserDefaults.standard.string(forKey: Theme.storageKey)
-                .flatMap(Theme.init(rawValue:)) ?? .monochrome
-            let dark = Palette.isDark(effectiveAppearance)
+            // Drawn once and reused until the size, theme or mode changes.
             layer.contents = PickaxeBackdrop.image(size: bounds.size,
                                                    scale: window?.backingScaleFactor ?? 2,
-                                                   theme: theme, dark: dark)
-            layer.backgroundColor = PickaxeBackdrop.colors(for: theme, dark: dark).background.cgColor
+                                                   theme: backdrop.theme, dark: backdrop.dark)
+            layer.backgroundColor = nil
         }
     }
 
@@ -541,11 +664,13 @@ final class SwipeOverlayView: NSView {
             clear()
             return
         }
+        let slide = slide
         CATransaction.begin()
         CATransaction.setAnimationDuration(0.12)
         CATransaction.setCompletionBlock { [weak self] in
-            self?.isHidden = true
-            self?.clear()
+            guard let self, self.slide == slide else { return } // a new swipe began
+            self.isHidden = true
+            self.clear()
         }
         root.opacity = 0
         CATransaction.commit()
@@ -595,5 +720,56 @@ struct SwipeOverlay: NSViewRepresentable {
 
     static func dismantleNSView(_ nsView: SwipeOverlayView, coordinator: SwipeNavigator) {
         coordinator.detach(nsView)
+    }
+}
+
+// MARK: - Left out of page pictures
+
+/// Hosts a view in its own AppKit view so it can be hidden, at once, while
+/// a page picture is taken. For things drawn over the page that aren't
+/// part of it, like the link-hover label: a picture that included it would
+/// show that label again when the page slides back in.
+struct ExcludedFromPagePictures<Content: View>: NSViewRepresentable {
+    private let content: Content
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    func makeNSView(context: Context) -> PagePictureExcludedView {
+        PagePictureExcludedView(rootView: AnyView(content))
+    }
+
+    func updateNSView(_ nsView: PagePictureExcludedView, context: Context) {
+        nsView.rootView = AnyView(content)
+    }
+
+    /// The content's own size, narrowed to the space on offer.
+    func sizeThatFits(_ proposal: ProposedViewSize, nsView: PagePictureExcludedView,
+                      context: Context) -> CGSize? {
+        let ideal = nsView.fittingSize
+        return CGSize(width: min(ideal.width, proposal.width ?? ideal.width), height: ideal.height)
+    }
+}
+
+final class PagePictureExcludedView: NSHostingView<AnyView> {
+    private static let all = NSHashTable<PagePictureExcludedView>.weakObjects()
+
+    required init(rootView: AnyView) {
+        super.init(rootView: rootView)
+        Self.all.add(self)
+    }
+
+    @MainActor required dynamic init?(coder: NSCoder) { fatalError("not used") }
+
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
+
+    /// Hides every such view showing in a window and returns them, to be
+    /// shown again once the picture is taken.
+    static func hideAll(in window: NSWindow?) -> [NSView] {
+        guard let window else { return [] }
+        let showing = all.allObjects.filter { $0.window === window && !$0.isHidden }
+        for view in showing { view.isHidden = true }
+        return showing
     }
 }

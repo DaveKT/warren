@@ -93,6 +93,7 @@ final class BrowserStore: ObservableObject {
         guard let index = tabs.firstIndex(where: { $0.id == tab.id }) else { return }
         // Undo Close Tab brings the tab back showing its page, not the image.
         closeImage(in: tab)
+        tab.snapshots.removeAll() // swipe pictures are too big to keep for a closed tab
         tabs.remove(at: index)
         if tabs.isEmpty {
             newTab()
@@ -188,6 +189,7 @@ final class BrowserStore: ObservableObject {
     }
 
     func selectTab(_ tab: BrowserTab) {
+        if let previous = selectedTab, previous !== tab { swipe.trimForBackground(previous) }
         selectedTabID = tab.id
         addressBarText = tab.currentAddress?.displayString ?? ""
         if tab.needsRestoredPage {

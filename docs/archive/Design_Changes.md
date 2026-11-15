@@ -1,5 +1,7 @@
 # Design Changes
 
+> **Archived 2026-11-15.** Open bugs, feature requests, and design changes are now tracked in [GitHub Issues](https://github.com/DaveKT/warren/issues). This file is kept as a record of finished work; items that were still open link to their issues.
+
 ## Tool Bar Button Changes ✅ DONE 2026-09-12
 
 ~~Currently the Bookmarking, Managing Bookmarks, and Exporting are three separate buttons. Please group them like the back forward and refresh buttons are.~~ The three buttons now sit in a single attached control group on the trailing side of the toolbar.

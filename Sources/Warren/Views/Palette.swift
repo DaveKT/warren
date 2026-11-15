@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 /// Accent colors, drawn from the Gopher themes
-/// (docs/Feature_Requests.md).
+/// (docs/archive/Feature_Requests.md).
 enum Palette {
     /// Gopher Moss #ac7838.
     static let moss = NSColor(srgbRed: 0xAC / 255, green: 0x78 / 255, blue: 0x38 / 255, alpha: 1)
@@ -58,7 +58,7 @@ enum Theme: String, CaseIterable, Identifiable {
         }
     }
 
-    /// The theme's five colors (docs/Feature_Requests.md), for Settings.
+    /// The theme's five colors (docs/archive/Feature_Requests.md), for Settings.
     var swatches: [NSColor] {
         switch self {
         case .monochrome: return []

@@ -1,54 +1,26 @@
 # Feature Requests
 
-## Command Line Utility
+> **Archived 2026-11-15.** Open bugs, feature requests, and design changes are now tracked in [GitHub Issues](https://github.com/DaveKT/warren/issues). This file is kept as a record of finished work; items that were still open link to their issues.
 
-1. Allow the user to fetch the content from a specific gopher url.
-2. Allow the user to list the current bookmarks.
-3. Allow the user to list the history items.
-4. Allow the user to search bookmarks and history items.
-5. Allow the user to remove a specific history item.
-6. Allow the user to remove a specific bookmark.
-7. Allow the user to remove all history items from the past hour, 4 hours, or all.
-8. The CLI should be pipeable to and from other command line utlities (e.g. grep)
+## Command Line Utility → [#4](https://github.com/DaveKT/warren/issues/4)
 
-## Configuration, History, and Bookmark Syncing
+Moved to GitHub issue [#4](https://github.com/DaveKT/warren/issues/4).
 
-1. Allow users to sync their configuration, history, and bookmarks in iCloud. The user should be the signed-in user for the account (we don't need complex access management). This will allow users with more than one Mac to have their Warren state synced between devices.
+## Configuration, History, and Bookmark Syncing → [#5](https://github.com/DaveKT/warren/issues/5)
 
-## Support for Gemini
+Moved to GitHub issue [#5](https://github.com/DaveKT/warren/issues/5).
 
-Right now, the only protocol supported is Gopher. Gemini is another similar protocol that users of gopher will sometimes run into and use. Warren should support Gemini.
+## Support for Gemini → [#6](https://github.com/DaveKT/warren/issues/6)
 
-## Swipe Navigation
+Moved to GitHub issue [#6](https://github.com/DaveKT/warren/issues/6).
 
-Users of macOS are used to being able to use two fingers to swipe left and right when navigating web pages in Safari. Users of Warren should be able to use the same gestures to navigate pages, both back to return to a previous page and forward to return to a page they just left. This will give us a similar experience to what Mac users are already used to.
+## Swipe Navigation → [#7](https://github.com/DaveKT/warren/issues/7)
 
-**Decision:** match Safari's interactive slide — the page follows the fingers as they swipe, revealing the previous (or next) page underneath, and either completes or snaps back when the fingers lift — rather than simply switching pages once the gesture finishes. This is several times the work of a simple switch but is the experience Mac users expect.
+Moved to GitHub issue [#7](https://github.com/DaveKT/warren/issues/7).
 
-**Notes:**
+## Code Highlighting → [#8](https://github.com/DaveKT/warren/issues/8)
 
-- Back/Forward already show each history entry's cached content, so the destination page can be shown instantly once the swipe completes; the existing `goBack()` / `goForward()` can drive the actual navigation.
-- Horizontal scrolling conflicts with the gesture. Text-file pages don't wrap long lines and scroll sideways, and the image view scrolls in both directions. As in Safari, a swipe should only navigate once the content is already scrolled to that horizontal edge; otherwise the gesture scrolls the content.
-- Handle the gesture at the window/content level rather than inside the text view, so it also works on the Home page, error pages, and images.
-- Respect the system setting System Settings → Trackpad → More Gestures → "Swipe between pages" (`NSEvent.isSwipeTrackingFromScrollEventsEnabled`), and support Magic Mouse swipes, which arrive the same way.
-- Do nothing (or give a small rubber-band bounce) when there is no page to go back or forward to.
-
-## Code Highlighting
-
-Some Gopher pages are dedicated to talking about technical issues, like software development. Those pages may have code snippets to demonstrate a point. Code snippets may be in languages like C, Java, Python, BASH, ZSH, or configuration files like YAML. It would be nice to provide syntax highlighting where code is detected. The highlighting should not interfere with the page formatting. The user should be able to toggle this feature on and off.
-
-**Notes:**
-
-- Detecting code is the hard part: Gopher text has no markup saying where code starts and ends. Proposed phases:
-  1. Highlight a whole text file when its selector ends in a known extension (`.c`, `.h`, `.java`, `.py`, `.sh`, `.zsh`, `.yaml`, `.yml`, and so on) or it starts with a `#!` shebang line. Reliable and simple.
-  2. Highlight blocks fenced with ` ``` `, which some phlogs use.
-  3. Heuristic detection of unmarked code within prose — last, or possibly never, since ASCII art, tables, and columnar layouts are easily mistaken for code.
-- Not interfering with formatting means changing color only — no bold, italic, or size changes — so the monospaced columns line up exactly as before.
-- Highlighting must coexist with Find on Page. In dark mode Find sets and clears temporary foreground colors across the whole page, so code colors must be applied to the page's attributed text when it is rendered, not as temporary attributes, or Find would wipe them.
-- Colors must work in both light and dark mode, ideally drawn from the Gopher palette.
-- Copy and Export continue to produce plain text.
-- Implementation: the project has no third-party packages. A small built-in tokenizer (keywords, strings, comments, numbers per language) would cover the listed languages and keep it that way; libraries such as Highlightr bundle a JavaScript engine (highlight.js on JavaScriptCore), which is heavy for this.
-- Open questions: highlight text-file pages only, or also code in menu pages (which arrives as info lines)? Should it be on or off by default? The toggle would live in the View menu and be remembered between launches.
+Moved to GitHub issue [#8](https://github.com/DaveKT/warren/issues/8).
 
 ## History Epic ✅ DONE 2026-09-11
 

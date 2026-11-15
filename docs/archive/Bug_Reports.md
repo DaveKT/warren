@@ -1,5 +1,7 @@
 # Bug Reports
 
+> **Archived 2026-11-15.** Open bugs, feature requests, and design changes are now tracked in [GitHub Issues](https://github.com/DaveKT/warren/issues). This file is kept as a record of finished work; items that were still open link to their issues.
+
 ## Markdown Export Issue ✅ RESOLVED 2026-09-11
 
 The markdown export for gopher://sava.rocks/1/blog/when-the-small-web-gets-an-ai-door/ is not clean. There are several issues.
@@ -41,20 +43,14 @@ page titles are dropped, and `* ` info lines become real markdown bullets.
 
 Fixed: menu pages now render in the same AppKit text view as text files (`PageTextView`), as one document. Links are clickable link attributes (⌘-click opens menus and text files in a new tab), item-type icons are drawn in a margin outside the text so they're never selected or copied, and hovering a link shows its type and address at the bottom of the window. On the example page, selecting from "with aging PS3 consoles" through "damaged connections," and copying yields exactly those three lines as plain text.
 
-## Text Size Change Drops the Selection (minor)
+## Text Size Change Drops the Selection (minor) → [#1](https://github.com/DaveKT/warren/issues/1)
 
-Changing the text size (⌘+ / ⌘− / ⌘0) rebuilds the page text in `PageTextView`, which discards any current selection and can shift the scroll position slightly. Cause: the view replaces the whole attributed string to change the font. Changing only the font attribute in place would keep both the selection and the position. Low impact — the old SwiftUI page behaved about the same.
+Moved to GitHub issue [#1](https://github.com/DaveKT/warren/issues/1).
 
-## Link Hover Label Can Go Stale (minor)
+## Link Hover Label Can Go Stale (minor) → [#2](https://github.com/DaveKT/warren/issues/2)
 
-The hover label at the bottom of the window (e.g. "Menu · gopher://…") lags in two cases: after reloading with ⌘R while the pointer rests on a link, the label stays until the pointer moves; and while scrolling with the wheel under a stationary pointer, the underline and label don't follow the link that moves under the pointer until the mouse moves. Cause: the reload resets the hover state without clearing the label, and AppKit sends no mouse-moved events during scrolling. Both clear on the next pointer movement. Fix: clear the label when the page content changes, and re-check the pointer position after scrolls.
+Moved to GitHub issue [#2](https://github.com/DaveKT/warren/issues/2).
 
-## Extra BrowserStore Instances at Launch (to investigate)
+## Extra BrowserStore Instances at Launch (to investigate) → [#3](https://github.com/DaveKT/warren/issues/3)
 
-Launching Warren with one window created four `BrowserStore` objects, though only one window appeared. Each window's view builds its store with `StateObject(wrappedValue: BrowserStore(...))` in `BrowserWindow.init` (`WarrenApp.swift`), which SwiftUI should evaluate only once per window. Found by chance on 2026-11-14 while testing the image lightbox, when a temporary test hook in `BrowserStore.init` ran four times. The cause hasn't been investigated.
-
-No visible effect so far. The extra stores only register with the session list when their window appears (`onAppear`), so they aren't saved by Restore Last Session, and they make no network requests. Each one does create a blank tab and starts observing undo groups.
-
-To investigate: log each store's creation and `deinit`, with a stack trace, to see what builds the extras and whether they're released.
-- If they're released right away, SwiftUI is probably building and discarding extra copies of the window's root view. Keep `BrowserStore.init` free of side effects and move setup (the first tab, undo observation) to when the window appears.
-- If they're never released, they're leaking, and the store's ownership needs fixing.
+Moved to GitHub issue [#3](https://github.com/DaveKT/warren/issues/3).

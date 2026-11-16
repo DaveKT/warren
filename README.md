@@ -46,8 +46,7 @@ directly — no Gatekeeper workarounds needed.
   trackpad (one on a Magic Mouse) to go back and forward, Safari style:
   the page follows your fingers over a picture of the page it's going to,
   then finishes or springs back. Pages that scroll sideways scroll to
-  their edge first. With nowhere further to go, the page stretches over a
-  field of pickaxes in the accent color. Follows System Settings →
+  their edge first. Follows System Settings →
   Trackpad → More Gestures → Swipe between pages
 - **Image lightbox** — clicking an image link on a page opens the image
   over the page, which dims beneath it, instead of leaving the page. Each
